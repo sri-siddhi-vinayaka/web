@@ -1,0 +1,15 @@
+name: Supabase keep-alive
+
+# Free-tier Supabase projects auto-pause after 7 days with no DB activity.
+# Ping the deployed keep-alive route every 4 days so that never happens.
+on:
+  schedule:
+    - cron: "0 6 */4 * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit keep-alive endpoint
+        run: curl -fsS "${{ vars.SITE_URL }}/api/keepalive"

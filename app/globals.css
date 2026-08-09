@@ -1,0 +1,128 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Sri Siddhi Vinayaka — design tokens
+   Tailwind v4: tokens live here, in CSS. There is no tailwind.config.js.
+   Every token in @theme below generates utilities (bg-*, text-*, border-*).
+   Use the semantic tokens (primary/surface/ink) in components; reach for the
+   raw ramps (saffron-*, maroon-*) only when a semantic token doesn't exist.
+--------------------------------------------------------------------------- */
+
+:root {
+  /* Raw palette — marigold saffron, the festival's primary hue */
+  --saffron-50: #fff4e6;
+  --saffron-100: #ffe4c4;
+  --saffron-200: #ffce94;
+  --saffron-300: #ffb25c;
+  --saffron-400: #ff9829;
+  --saffron-500: #f57c00;
+  --saffron-600: #dc6803;
+  --saffron-700: #b54708;
+  --saffron-800: #8a3708;
+  --saffron-900: #6b2b08;
+
+  /* Raw palette — traditional maroon, the grounding/authority hue */
+  --maroon-50: #fcf0f2;
+  --maroon-100: #f8dde2;
+  --maroon-200: #efbac4;
+  --maroon-300: #e08b9d;
+  --maroon-400: #c95771;
+  --maroon-500: #a8324e;
+  --maroon-600: #8c2440;
+  --maroon-700: #6e1b33;
+  --maroon-800: #551427;
+  --maroon-900: #3d0e1c;
+
+  /* Semantic tokens — light */
+  --background: #fffbf5;
+  --foreground: #2a1410;
+  --surface: #ffffff;
+  --surface-muted: var(--saffron-50);
+  --border: #f0e0cc;
+  --muted: #7a6a5c;
+  --primary: var(--saffron-700);
+  --primary-contrast: #ffffff;
+  --accent: var(--saffron-500);
+  --brand: var(--maroon-700);
+  --brand-contrast: #ffffff;
+  --success: #1f7a4d;
+  --danger: var(--maroon-600);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #1a0f0c;
+    --foreground: #f7ece2;
+    --surface: #261812;
+    --surface-muted: #21140f;
+    --border: #3d2a20;
+    --muted: #b8a294;
+    --primary: var(--saffron-300);
+    --primary-contrast: #2a1410;
+    --accent: var(--saffron-400);
+    --brand: var(--maroon-300);
+    --brand-contrast: #2a1410;
+    --success: #5fcf9a;
+    --danger: var(--maroon-300);
+  }
+}
+
+@theme inline {
+  --color-saffron-50: var(--saffron-50);
+  --color-saffron-100: var(--saffron-100);
+  --color-saffron-200: var(--saffron-200);
+  --color-saffron-300: var(--saffron-300);
+  --color-saffron-400: var(--saffron-400);
+  --color-saffron-500: var(--saffron-500);
+  --color-saffron-600: var(--saffron-600);
+  --color-saffron-700: var(--saffron-700);
+  --color-saffron-800: var(--saffron-800);
+  --color-saffron-900: var(--saffron-900);
+
+  --color-maroon-50: var(--maroon-50);
+  --color-maroon-100: var(--maroon-100);
+  --color-maroon-200: var(--maroon-200);
+  --color-maroon-300: var(--maroon-300);
+  --color-maroon-400: var(--maroon-400);
+  --color-maroon-500: var(--maroon-500);
+  --color-maroon-600: var(--maroon-600);
+  --color-maroon-700: var(--maroon-700);
+  --color-maroon-800: var(--maroon-800);
+  --color-maroon-900: var(--maroon-900);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-primary-contrast: var(--primary-contrast);
+  --color-accent: var(--accent);
+  --color-brand: var(--brand);
+  --color-brand-contrast: var(--brand-contrast);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Venue wifi is slow and the page is read one-handed on a phone — keep tap
+   targets reachable and respect users who ask for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
