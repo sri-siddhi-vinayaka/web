@@ -116,7 +116,13 @@ These are deliberate product decisions, not gaps to helpfully fill:
   query by phone number — not a session.
 - **Payments.** Donations are coordinated off-app via a named contact's phone
   number. No gateway, no UPI intent, no PCI surface.
-- **Native app, multi-language.** Out of scope for now.
+- **Native app, multi-language.** Out of scope for now. Multi-language was
+  explored for `/about-ganesha` (English/Telugu/Hindi/Kannada/Marathi/
+  Gujarati/Tamil, page-wide selector so the whole page switches consistently
+  rather than one section at a time) and deliberately deferred back to
+  English-only — revisit if/when there's bandwidth for it, and for translation
+  review: AI-assisted translations need a native speaker's proofread before
+  they'd be trustworthy to ship.
 
 ## Workflow
 
