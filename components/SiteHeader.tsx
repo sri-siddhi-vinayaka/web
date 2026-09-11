@@ -1,5 +1,6 @@
 import Link from "next/link";
 import VinayakaIcon from "@/components/icons/VinayakaIcon";
+import MobileNav from "@/components/MobileNav";
 import { NAV_LINKS, SITE_NAME } from "@/lib/config";
 
 export default function SiteHeader() {
@@ -9,7 +10,11 @@ export default function SiteHeader() {
         <Link href="/" className="text-brand" aria-label={SITE_NAME}>
           <VinayakaIcon className="h-8 w-8" />
         </Link>
-        <nav className="flex gap-1 overflow-x-auto text-sm">
+
+        {/* Six nav items don't fit on a phone without wrapping or a scroll
+            hint — collapse to a dropdown below sm:, where there's room for
+            the full row instead. */}
+        <nav className="hidden gap-1 text-sm sm:flex">
           {NAV_LINKS.slice(1).map((link) => (
             <Link
               key={link.href}
@@ -20,6 +25,9 @@ export default function SiteHeader() {
             </Link>
           ))}
         </nav>
+        <div className="sm:hidden">
+          <MobileNav />
+        </div>
       </div>
     </header>
   );
