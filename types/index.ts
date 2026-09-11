@@ -34,3 +34,11 @@ export type RegistrationCount = {
   event_id: string;
   count: number;
 };
+
+export type FoodRegistration = {
+  id: string;
+  contact_name: string;
+  phone: string;
+  dish_name: string;
+  created_at: string;
+};

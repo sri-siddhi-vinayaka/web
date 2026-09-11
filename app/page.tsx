@@ -4,6 +4,7 @@ import CountdownTimer from "@/components/CountdownTimer";
 import GaneshaPhoto from "@/components/GaneshaPhoto";
 import ScrollIcon from "@/components/icons/ScrollIcon";
 import ClipboardIcon from "@/components/icons/ClipboardIcon";
+import ModakIcon from "@/components/icons/ModakIcon";
 import { getEvents, getTodayHighlights } from "@/lib/events";
 import { FESTIVAL_END, FESTIVAL_START, VENUE_MAPS_URL } from "@/lib/config";
 
@@ -27,6 +28,7 @@ function formatTime(iso: string): string {
 const QUICK_LINKS: { href: string; label: string; Icon: ComponentType<{ className?: string }> }[] = [
   { href: "/about-ganesha", label: "About Ganesha", Icon: ScrollIcon },
   { href: "/schedule", label: "Pooja Registration", Icon: ClipboardIcon },
+  { href: "/register/food", label: "Food Registration", Icon: ModakIcon },
 ];
 
 export default async function Home() {

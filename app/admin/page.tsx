@@ -31,6 +31,21 @@ async function getRegistrations() {
   return data ?? [];
 }
 
+async function getFoodRegistrations() {
+  if (!isSupabaseAdminConfigured) return [];
+
+  const { data, error } = await supabaseAdmin
+    .from("food_registrations")
+    .select("id, contact_name, phone, dish_name, created_at")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.warn("[admin] getFoodRegistrations:", error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
 export default async function AdminPage(props: PageProps<"/admin">) {
   const searchParams = await props.searchParams;
   const isAdmin = await isAdminRequest();
@@ -64,8 +79,9 @@ export default async function AdminPage(props: PageProps<"/admin">) {
     );
   }
 
-  const [registrations, announcements, galleryItems] = await Promise.all([
+  const [registrations, foodRegistrations, announcements, galleryItems] = await Promise.all([
     getRegistrations(),
+    getFoodRegistrations(),
     getAnnouncements(),
     getGalleryItems(),
   ]);
@@ -113,6 +129,39 @@ export default async function AdminPage(props: PageProps<"/admin">) {
                 <tr>
                   <td colSpan={4} className="px-3 py-4 text-center text-muted">
                     No registrations yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="mt-8">
+        <h2 className="text-lg font-semibold text-foreground">
+          Food Registrations ({foodRegistrations.length})
+        </h2>
+        <div className="mt-3 overflow-x-auto rounded-2xl bg-surface shadow-sm ring-1 ring-border">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-border text-muted">
+                <th className="px-3 py-2 font-medium">Contact</th>
+                <th className="px-3 py-2 font-medium">Phone</th>
+                <th className="px-3 py-2 font-medium">Dish</th>
+              </tr>
+            </thead>
+            <tbody>
+              {foodRegistrations.map((registration) => (
+                <tr key={registration.id} className="border-b border-border last:border-0">
+                  <td className="px-3 py-2 text-foreground">{registration.contact_name}</td>
+                  <td className="px-3 py-2 text-foreground">{registration.phone}</td>
+                  <td className="px-3 py-2 text-muted">{registration.dish_name}</td>
+                </tr>
+              ))}
+              {foodRegistrations.length === 0 && (
+                <tr>
+                  <td colSpan={3} className="px-3 py-4 text-center text-muted">
+                    No food registrations yet.
                   </td>
                 </tr>
               )}
