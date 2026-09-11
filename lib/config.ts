@@ -1,11 +1,17 @@
 export const SITE_NAME = "Sri Siddhi Vinayaka";
 
-// TODO(committee): set to this year's actual Ganesh Chaturthi start
-// date/time once confirmed — the countdown and schedule both key off this.
-// Venue is in Henrico, VA — Eastern time, not IST. Sept 14 falls in EDT
-// (UTC-4); if the date ever moves outside DST (after ~early Nov), this
-// offset needs to become -05:00 (EST) instead.
-export const FESTIVAL_START = new Date("2026-09-14T06:00:00-04:00");
+// TODO(committee): confirm these once final — the countdown, "today's
+// highlights", and the festival-status banner all key off these two dates.
+// Venue is in Henrico, VA — Eastern time, not IST. Both dates fall in EDT
+// (UTC-4); if the festival ever moves outside DST (after ~early Nov), these
+// offsets need to become -05:00 (EST) instead.
+//
+// Starts at midnight, not some arbitrary morning hour — that's when the day
+// of the festival begins, even if the first pooja itself is later that day.
+export const FESTIVAL_START = new Date("2026-09-14T00:00:00-04:00");
+// Exclusive upper bound: the festival runs through all of Sept 25, so this
+// is the instant Sept 26 begins.
+export const FESTIVAL_END = new Date("2026-09-26T00:00:00-04:00");
 
 // TODO(committee): confirm the live stream platform (YouTube vs Facebook
 // Live) and paste the embeddable URL once it exists. Left empty until then —

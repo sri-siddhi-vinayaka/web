@@ -6,7 +6,7 @@ import VinayakaIcon from "@/components/icons/VinayakaIcon";
 import BookIcon from "@/components/icons/BookIcon";
 import ClipboardIcon from "@/components/icons/ClipboardIcon";
 import { getEvents, getTodayHighlights } from "@/lib/events";
-import { FESTIVAL_START, VENUE_MAPS_URL } from "@/lib/config";
+import { FESTIVAL_END, FESTIVAL_START, VENUE_MAPS_URL } from "@/lib/config";
 
 // "Today's highlights" must roll over with the calendar date on its own, with
 // no admin action to hang a revalidation off — static prerendering would
@@ -44,12 +44,16 @@ export default async function Home() {
         <GaneshaPhoto />
 
         <p className="max-w-md text-left text-base text-muted">
-          Welcome! Every year we bring the community together for ten days of
-          pooja, cultural programs, and community spirit. This site is your
-          guide to the celebration — browse the schedule, register for
-          events, watch live darshan, and stay updated, all in one place.
+          Welcome! Every year we bring the community together to celebrate
+          Ganesh Chaturthi with pooja, cultural programs, and community
+          spirit. This site is your guide to the celebration — browse the
+          schedule, register for events, watch live darshan, and stay
+          updated, all in one place.
         </p>
-        <CountdownTimer target={FESTIVAL_START.toISOString()} />
+        <CountdownTimer
+          start={FESTIVAL_START.toISOString()}
+          end={FESTIVAL_END.toISOString()}
+        />
       </section>
 
       <section className="mx-auto grid w-full max-w-3xl grid-cols-3 gap-3">
