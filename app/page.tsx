@@ -2,8 +2,7 @@ import Link from "next/link";
 import type { ComponentType } from "react";
 import CountdownTimer from "@/components/CountdownTimer";
 import GaneshaPhoto from "@/components/GaneshaPhoto";
-import VinayakaIcon from "@/components/icons/VinayakaIcon";
-import BookIcon from "@/components/icons/BookIcon";
+import ScrollIcon from "@/components/icons/ScrollIcon";
 import ClipboardIcon from "@/components/icons/ClipboardIcon";
 import { getEvents, getTodayHighlights } from "@/lib/events";
 import { FESTIVAL_END, FESTIVAL_START, VENUE_MAPS_URL } from "@/lib/config";
@@ -21,9 +20,12 @@ function formatTime(iso: string): string {
   });
 }
 
+// "Mythology" (and its /mythology route) removed for now — out of scope,
+// revisit later. 32 forms + mantras still live on /about-ganesha. ScrollIcon
+// (not VinayakaIcon, already the header logo just above) keeps this tile
+// visually distinct from the brand mark sitting right on top of it.
 const QUICK_LINKS: { href: string; label: string; Icon: ComponentType<{ className?: string }> }[] = [
-  { href: "/about-ganesha", label: "About Ganesha", Icon: VinayakaIcon },
-  { href: "/mythology", label: "Mythology", Icon: BookIcon },
+  { href: "/about-ganesha", label: "About Ganesha", Icon: ScrollIcon },
   { href: "/schedule", label: "Pooja Registration", Icon: ClipboardIcon },
 ];
 
@@ -56,7 +58,7 @@ export default async function Home() {
         />
       </section>
 
-      <section className="mx-auto grid w-full max-w-3xl grid-cols-3 gap-3">
+      <section className="mx-auto grid w-full max-w-3xl grid-cols-2 gap-3">
         {QUICK_LINKS.map(({ href, label, Icon }) => (
           <Link
             key={href}
