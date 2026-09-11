@@ -6,8 +6,8 @@ import { getEventById } from "@/lib/events";
 export const metadata: Metadata = { title: "Register" };
 
 function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("en-IN", {
-    timeZone: "Asia/Kolkata",
+  return new Date(iso).toLocaleString("en-US", {
+    timeZone: "America/New_York",
     weekday: "long",
     day: "numeric",
     month: "short",

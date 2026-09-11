@@ -12,8 +12,8 @@ export const metadata: Metadata = { title: "Schedule" };
 export const dynamic = "force-dynamic";
 
 function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString("en-IN", {
-    timeZone: "Asia/Kolkata",
+  return new Date(iso).toLocaleTimeString("en-US", {
+    timeZone: "America/New_York",
     hour: "numeric",
     minute: "2-digit",
   });

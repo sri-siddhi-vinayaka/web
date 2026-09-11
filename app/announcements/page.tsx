@@ -24,8 +24,8 @@ export default async function AnnouncementsPage() {
               <p className="font-semibold text-foreground">{announcement.title}</p>
               <p className="mt-1 text-sm text-muted">{announcement.body}</p>
               <p className="mt-2 text-xs text-muted">
-                {new Date(announcement.created_at).toLocaleDateString("en-IN", {
-                  timeZone: "Asia/Kolkata",
+                {new Date(announcement.created_at).toLocaleDateString("en-US", {
+                  timeZone: "America/New_York",
                   day: "numeric",
                   month: "short",
                   year: "numeric",

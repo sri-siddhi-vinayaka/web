@@ -34,10 +34,11 @@ export async function getEventById(id: string): Promise<EventItem | null> {
   return data;
 }
 
-// The festival's schedule is authored in IST regardless of where this
-// function runs (Vercel's server clock is UTC) — anchor "today" to that
-// timezone's calendar date rather than the server's local date.
-const FESTIVAL_TIME_ZONE = "Asia/Kolkata";
+// The venue is in Henrico, VA — anchor "today" to Eastern time regardless of
+// where this function runs (Vercel's server clock is UTC), rather than the
+// server's local date. Using the IANA zone name (not a fixed offset) means
+// this automatically tracks the EDT/EST transition.
+const FESTIVAL_TIME_ZONE = "America/New_York";
 
 function calendarDateKey(date: Date): string {
   return date.toLocaleDateString("en-CA", { timeZone: FESTIVAL_TIME_ZONE });
