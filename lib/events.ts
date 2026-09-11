@@ -14,11 +14,13 @@ function logAndFallback<T>(context: string, error: { message: string }, fallback
 
 // Wrap any async operation with a timeout. Placeholder Supabase URLs (and
 // genuine network hangs) can stall indefinitely; fail fast instead of blocking
-// renders. 3s is enough for real Supabase on good/bad networks, short enough
-// that users don't perceive a broken connection as "the site is slow".
+// renders. This call is server-to-server (Vercel function to Supabase), not
+// subject to the visitor's mobile connection, so a real project replies in
+// well under a second — 800ms leaves margin without making every placeholder
+// load feel sluggish.
 function withTimeout<T>(
   promise: Promise<T>,
-  ms: number = 3000,
+  ms: number = 800,
   context: string = "query"
 ): Promise<T> {
   return Promise.race([
@@ -42,7 +44,7 @@ export async function getEvents(): Promise<EventItem[]> {
         .select("*")
         .order("day_number", { ascending: true })
         .order("start_time", { ascending: true }) as unknown as Promise<{ data: EventItem[] | null; error: { message: string } | null }>,
-      3000,
+      800,
       "getEvents"
     );
 
@@ -59,7 +61,7 @@ export async function getEventById(id: string): Promise<EventItem | null> {
   try {
     const { data, error } = await withTimeout(
       supabase.from("events").select("*").eq("id", id).maybeSingle() as unknown as Promise<{ data: EventItem | null; error: { message: string } | null }>,
-      3000,
+      800,
       "getEventById"
     );
 
@@ -100,7 +102,7 @@ export async function getAnnouncements(): Promise<Announcement[]> {
         .from("announcements")
         .select("*")
         .order("created_at", { ascending: false }) as unknown as Promise<{ data: Announcement[] | null; error: { message: string } | null }>,
-      3000,
+      800,
       "getAnnouncements"
     );
 
@@ -120,7 +122,7 @@ export async function getGalleryItems(): Promise<GalleryItem[]> {
         .from("gallery_items")
         .select("*")
         .order("created_at", { ascending: false }) as unknown as Promise<{ data: GalleryItem[] | null; error: { message: string } | null }>,
-      3000,
+      800,
       "getGalleryItems"
     );
 
@@ -143,7 +145,7 @@ export async function getRegistrationCount(eventId: string): Promise<number> {
   try {
     const { data, error } = await withTimeout(
       supabase.rpc("registration_count", { p_event_id: eventId }) as unknown as Promise<{ data: number | null; error: { message: string } | null }>,
-      3000,
+      800,
       "getRegistrationCount"
     );
 
