@@ -5,7 +5,7 @@ import { registerFood, type FoodRegisterState } from "@/app/actions/food";
 
 const initialState: FoodRegisterState = { status: "idle" };
 
-export default function FoodRegistrationForm() {
+export default function FoodRegistrationForm({ eventId }: { eventId: string }) {
   const [state, formAction, pending] = useActionState(registerFood, initialState);
 
   if (state.status === "success") {
@@ -21,6 +21,8 @@ export default function FoodRegistrationForm() {
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
+      <input type="hidden" name="event_id" value={eventId} />
+
       <div className="flex flex-col gap-1">
         <label htmlFor="contact_name" className="text-sm font-medium text-foreground">
           Contact name
@@ -71,7 +73,7 @@ export default function FoodRegistrationForm() {
 
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || !eventId}
         className="min-h-11 rounded-lg bg-primary px-4 py-2 font-medium text-primary-contrast transition-opacity hover:opacity-90 disabled:opacity-60"
       >
         {pending ? "Signing up…" : "Sign up to bring a dish"}

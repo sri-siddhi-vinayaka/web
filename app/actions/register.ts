@@ -20,7 +20,7 @@ export async function registerForEvent(
   const eventId = String(formData.get("event_id") ?? "");
   const name = String(formData.get("name") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
-  const gotra = String(formData.get("gotra") ?? "").trim();
+  const attendeeCount = Number(formData.get("attendee_count"));
 
   if (!UUID_RE.test(eventId)) {
     return {
@@ -29,7 +29,10 @@ export async function registerForEvent(
     };
   }
   if (!name || !phone) {
-    return { status: "error", message: "Name and phone number are required." };
+    return { status: "error", message: "Name(s) and phone number are required." };
+  }
+  if (!Number.isInteger(attendeeCount) || attendeeCount < 1) {
+    return { status: "error", message: "Number of people attending must be at least 1." };
   }
   if (!isSupabaseConfigured) {
     return { status: "error", message: "Registration isn't available yet — please try again later." };
@@ -39,7 +42,7 @@ export async function registerForEvent(
     event_id: eventId,
     name,
     phone,
-    gotra: gotra || null,
+    attendee_count: attendeeCount,
   });
 
   if (error) {

@@ -11,7 +11,7 @@ export type Registration = {
   event_id: string;
   name: string;
   phone: string;
-  gotra: string | null;
+  attendee_count: number;
   created_at: string;
 };
 
@@ -37,6 +37,7 @@ export type RegistrationCount = {
 
 export type FoodRegistration = {
   id: string;
+  event_id: string;
   contact_name: string;
   phone: string;
   dish_name: string;

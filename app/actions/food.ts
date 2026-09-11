@@ -7,6 +7,8 @@ export type FoodRegisterState =
   | { status: "success" }
   | { status: "error"; message: string };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // No pre-check for an already-claimed dish before inserting — food_registrations
 // has no public SELECT policy (see infra/migrations/0003_food_registrations.sql),
 // and two people bringing the same dish is a social coordination problem, not
@@ -16,10 +18,14 @@ export async function registerFood(
   _prevState: FoodRegisterState,
   formData: FormData
 ): Promise<FoodRegisterState> {
+  const eventId = String(formData.get("event_id") ?? "");
   const contactName = String(formData.get("contact_name") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
   const dishName = String(formData.get("dish_name") ?? "").trim();
 
+  if (!UUID_RE.test(eventId)) {
+    return { status: "error", message: "Please choose which day you'll bring your dish." };
+  }
   if (!contactName || !phone || !dishName) {
     return {
       status: "error",
@@ -31,6 +37,7 @@ export async function registerFood(
   }
 
   const { error } = await supabase.from("food_registrations").insert({
+    event_id: eventId,
     contact_name: contactName,
     phone,
     dish_name: dishName,

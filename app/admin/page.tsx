@@ -16,12 +16,20 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", {
+    timeZone: "America/New_York",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 async function getRegistrations() {
   if (!isSupabaseAdminConfigured) return [];
 
   const { data, error } = await supabaseAdmin
     .from("registrations")
-    .select("id, name, phone, gotra, created_at, events(title)")
+    .select("id, name, phone, attendee_count, created_at, events(title, start_time)")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -36,7 +44,7 @@ async function getFoodRegistrations() {
 
   const { data, error } = await supabaseAdmin
     .from("food_registrations")
-    .select("id, contact_name, phone, dish_name, created_at")
+    .select("id, contact_name, phone, dish_name, created_at, events(title, start_time)")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -108,26 +116,29 @@ export default async function AdminPage(props: PageProps<"/admin">) {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-border text-muted">
-                <th className="px-3 py-2 font-medium">Name</th>
+                <th className="px-3 py-2 font-medium">Name(s)</th>
                 <th className="px-3 py-2 font-medium">Phone</th>
-                <th className="px-3 py-2 font-medium">Gotra</th>
+                <th className="px-3 py-2 font-medium">Count</th>
+                <th className="px-3 py-2 font-medium">Date</th>
                 <th className="px-3 py-2 font-medium">Event</th>
               </tr>
             </thead>
             <tbody>
-              {registrations.map((registration) => (
-                <tr key={registration.id} className="border-b border-border last:border-0">
-                  <td className="px-3 py-2 text-foreground">{registration.name}</td>
-                  <td className="px-3 py-2 text-foreground">{registration.phone}</td>
-                  <td className="px-3 py-2 text-muted">{registration.gotra ?? "—"}</td>
-                  <td className="px-3 py-2 text-muted">
-                    {(registration.events as { title: string }[] | null)?.[0]?.title ?? "—"}
-                  </td>
-                </tr>
-              ))}
+              {registrations.map((registration) => {
+                const event = (registration.events as { title: string; start_time: string }[] | null)?.[0];
+                return (
+                  <tr key={registration.id} className="border-b border-border last:border-0">
+                    <td className="px-3 py-2 text-foreground">{registration.name}</td>
+                    <td className="px-3 py-2 text-foreground">{registration.phone}</td>
+                    <td className="px-3 py-2 text-muted">{registration.attendee_count}</td>
+                    <td className="px-3 py-2 text-muted">{event ? formatDate(event.start_time) : "—"}</td>
+                    <td className="px-3 py-2 text-muted">{event?.title ?? "—"}</td>
+                  </tr>
+                );
+              })}
               {registrations.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-3 py-4 text-center text-muted">
+                  <td colSpan={5} className="px-3 py-4 text-center text-muted">
                     No registrations yet.
                   </td>
                 </tr>
@@ -147,20 +158,25 @@ export default async function AdminPage(props: PageProps<"/admin">) {
               <tr className="border-b border-border text-muted">
                 <th className="px-3 py-2 font-medium">Contact</th>
                 <th className="px-3 py-2 font-medium">Phone</th>
+                <th className="px-3 py-2 font-medium">Date</th>
                 <th className="px-3 py-2 font-medium">Dish</th>
               </tr>
             </thead>
             <tbody>
-              {foodRegistrations.map((registration) => (
-                <tr key={registration.id} className="border-b border-border last:border-0">
-                  <td className="px-3 py-2 text-foreground">{registration.contact_name}</td>
-                  <td className="px-3 py-2 text-foreground">{registration.phone}</td>
-                  <td className="px-3 py-2 text-muted">{registration.dish_name}</td>
-                </tr>
-              ))}
+              {foodRegistrations.map((registration) => {
+                const event = (registration.events as { title: string; start_time: string }[] | null)?.[0];
+                return (
+                  <tr key={registration.id} className="border-b border-border last:border-0">
+                    <td className="px-3 py-2 text-foreground">{registration.contact_name}</td>
+                    <td className="px-3 py-2 text-foreground">{registration.phone}</td>
+                    <td className="px-3 py-2 text-muted">{event ? formatDate(event.start_time) : "—"}</td>
+                    <td className="px-3 py-2 text-muted">{registration.dish_name}</td>
+                  </tr>
+                );
+              })}
               {foodRegistrations.length === 0 && (
                 <tr>
-                  <td colSpan={3} className="px-3 py-4 text-center text-muted">
+                  <td colSpan={4} className="px-3 py-4 text-center text-muted">
                     No food registrations yet.
                   </td>
                 </tr>

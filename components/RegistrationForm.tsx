@@ -31,7 +31,7 @@ export default function RegistrationForm({
 
       <div className="flex flex-col gap-1">
         <label htmlFor="name" className="text-sm font-medium text-foreground">
-          Name
+          Name(s)
         </label>
         <input
           id="name"
@@ -39,6 +39,7 @@ export default function RegistrationForm({
           type="text"
           required
           autoComplete="name"
+          placeholder="e.g. Raj Patel & family"
           className="min-h-11 rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
         />
       </div>
@@ -58,13 +59,17 @@ export default function RegistrationForm({
       </div>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor="gotra" className="text-sm font-medium text-foreground">
-          Gotra <span className="font-normal text-muted">(optional)</span>
+        <label htmlFor="attendee_count" className="text-sm font-medium text-foreground">
+          Number of people attending
         </label>
         <input
-          id="gotra"
-          name="gotra"
-          type="text"
+          id="attendee_count"
+          name="attendee_count"
+          type="number"
+          min={1}
+          step={1}
+          defaultValue={1}
+          required
           className="min-h-11 rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
         />
       </div>
