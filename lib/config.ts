@@ -28,6 +28,36 @@ export const DONATION_CONTACT = {
 export const VENUE_ADDRESS = "2526 Kilpeck Dr, Henrico, VA";
 export const VENUE_MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(VENUE_ADDRESS)}`;
 
+// Highlights from past celebrations, shown on the Gallery page below the
+// admin-managed photo grid. Linked out rather than embedded or scraped:
+// Instagram's oEmbed API now requires an app-review access token we don't
+// have, and a script-tag embed would violate the no-heavy-client-bundles
+// rule. The 2025 YouTube recording is the exception — a plain <iframe> costs
+// nothing extra to embed inline (same pattern as the live darshan embed).
+export const PREVIOUS_YEARS: {
+  year: number;
+  instagramUrl: string;
+  youtubeEmbedUrl?: string;
+}[] = [
+  {
+    year: 2025,
+    instagramUrl: "https://www.instagram.com/reel/DN3r3SWwu6G/?igsh=c2d3NnZrdXEwNHZy",
+    youtubeEmbedUrl: "https://www.youtube.com/embed/vYQ5CNzOXCU",
+  },
+  {
+    year: 2024,
+    instagramUrl: "https://www.instagram.com/reel/C_mstEKAYU-/?igsh=eGM1NXplaTFmNzY1",
+  },
+  {
+    year: 2023,
+    instagramUrl: "https://www.instagram.com/reel/CxXMpiAOp9z/?igsh=MWU2OWFvMzd2MDc3Nw==",
+  },
+  {
+    year: 2022,
+    instagramUrl: "https://www.instagram.com/reel/Ch6T6z2jlid/?igsh=M2x5NTVyeTMyOGUz",
+  },
+];
+
 export const NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/schedule", label: "Schedule" },
