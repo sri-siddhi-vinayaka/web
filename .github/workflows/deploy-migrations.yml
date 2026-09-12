@@ -82,9 +82,22 @@ jobs:
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_STAGING_DB_PASSWORD }}
           SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
 
+      # --include-all: independent feature branches each get their own
+      # migration file timestamped when the branch was created, but PRs get
+      # reviewed and merged in whatever order looks good on preview, not
+      # necessarily that creation order. That routinely produces a new
+      # migration whose timestamp sorts *before* one already applied to
+      # staging — the CLI refuses to apply it without this flag, treating
+      # it as a likely mistake (an old file accidentally left out). Here
+      # it's the expected case, not a mistake: every migration in this repo
+      # is additive to its own new table, never a dependent follow-up to
+      # another one, so applying them out of relative order is safe. First
+      # hit this with 20260913040000_seed_festival_schedule.sql landing
+      # after 20260913050000_suggestions.sql was already applied, because
+      # the suggestion box PR got reviewed and merged first.
       - name: Push migrations to staging
         run: |
-          supabase db push --yes --db-url "postgresql://postgres.${SUPABASE_PROJECT_REF}:${SUPABASE_DB_PASSWORD}@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
+          supabase db push --yes --include-all --db-url "postgresql://postgres.${SUPABASE_PROJECT_REF}:${SUPABASE_DB_PASSWORD}@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
         env:
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_STAGING_DB_PASSWORD }}
           SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
