@@ -48,3 +48,11 @@ export type FoodRegistration = {
   quantity_size: QuantitySize;
   created_at: string;
 };
+
+export type Suggestion = {
+  id: string;
+  message: string;
+  name: string | null;
+  contact: string | null;
+  created_at: string;
+};
