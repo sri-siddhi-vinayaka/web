@@ -22,6 +22,18 @@ function formatTime(iso: string): string {
   });
 }
 
+function formatDay(date: Date): string {
+  return date.toLocaleDateString("en-US", {
+    timeZone: "America/New_York",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+// FESTIVAL_END is an exclusive upper bound (see its comment in lib/config.ts)
+// — the festival's actual last day is one day before it.
+const FESTIVAL_LAST_DAY = new Date(FESTIVAL_END.getTime() - 24 * 60 * 60 * 1000);
+
 // "Mythology" (and its /mythology route) removed for now — out of scope,
 // revisit later. 32 forms + mantras still live on /about-ganesha. ScrollIcon
 // (not VinayakaIcon, already the header logo just above) keeps this tile
@@ -104,11 +116,23 @@ export default async function Home() {
 
       <section className="mx-auto w-full max-w-3xl rounded-2xl bg-surface p-6 text-center shadow-sm ring-1 ring-border">
         <h2 className="text-lg font-semibold text-foreground">We&apos;d Love to See You</h2>
-        <p className="mt-2 text-sm text-muted">
-          A question, a helping hand, or just a moment for Ganpati&apos;s
-          blessings — whatever brings you here, there&apos;s a place for you.
-          Swing by the venue, or send us a note.
-        </p>
+        {/* Left-aligned, width-constrained like the hero welcome paragraph
+            above (max-w-md text-left) — centered text.muted ragged-wraps
+            unevenly across two stacked sentences; this keeps a straight
+            left edge instead, while the heading/buttons around it stay
+            centered with the rest of this section. */}
+        <div className="mx-auto mt-2 flex max-w-md flex-col gap-2 text-left">
+          <p className="text-sm text-muted">
+            A question, a helping hand, or just a moment for Ganpati&apos;s
+            blessings — whatever brings you here, there&apos;s a place for you.
+            Swing by the venue, or send us a note.
+          </p>
+          <p className="text-sm text-muted">
+            Darshan is walk-in, any time — no registration, no headcount —
+            from Ganesh Sthapana ({formatDay(FESTIVAL_START)}) through the
+            Ladoo celebration ({formatDay(FESTIVAL_LAST_DAY)}).
+          </p>
+        </div>
         <div className="mt-4 flex flex-wrap justify-center gap-3">
           <Link
             href="/contact"
