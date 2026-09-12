@@ -3,6 +3,7 @@ import { isAdminRequest } from "@/lib/adminAuth";
 import { isSupabaseAdminConfigured, supabaseAdmin } from "@/lib/supabaseAdmin";
 import { getAnnouncements, getEvents, getGalleryItems } from "@/lib/events";
 import AddEventForm from "@/components/AddEventForm";
+import EditEventForm from "@/components/EditEventForm";
 import {
   addGalleryItemAction,
   createAnnouncementAction,
@@ -20,6 +21,18 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Pending Review",
+  confirmed: "Confirmed",
+  waitlisted: "Waitlisted",
+};
+
+const STATUS_ACTIONS: { value: "pending" | "confirmed" | "waitlisted"; label: string }[] = [
+  { value: "confirmed", label: "Confirm" },
+  { value: "waitlisted", label: "Waitlist" },
+  { value: "pending", label: "Set Pending" },
+];
+
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", {
     timeZone: "America/New_York",
@@ -33,7 +46,7 @@ async function getRegistrations() {
 
   const { data, error } = await supabaseAdmin
     .from("registrations")
-    .select("id, name, phone, attendee_count, status, created_at, events(title, start_time)")
+    .select("id, name, phone, adult_count, child_count, status, created_at, events(title, start_time)")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -99,6 +112,8 @@ export default async function AdminPage(props: PageProps<"/admin">) {
     getGalleryItems(),
   ]);
 
+  const pendingCount = registrations.filter((registration) => registration.status === "pending").length;
+
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
       <div className="flex items-center justify-between">
@@ -128,12 +143,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
               key={event.id}
               className="flex items-start justify-between gap-3 rounded-xl bg-surface p-3 text-sm ring-1 ring-border"
             >
-              <div>
-                <p className="font-medium text-foreground">
-                  Day {event.day_number} — {event.title}
-                </p>
-                <p className="text-muted">{formatDate(event.start_time)}</p>
-              </div>
+              <EditEventForm event={event} />
               <form action={deleteEventAction.bind(null, event.id)}>
                 <button type="submit" className="shrink-0 text-danger underline underline-offset-2">
                   Delete
@@ -152,6 +162,11 @@ export default async function AdminPage(props: PageProps<"/admin">) {
       <section className="mt-8">
         <h2 className="text-lg font-semibold text-foreground">
           Registrations ({registrations.length})
+          {pendingCount > 0 && (
+            <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary ring-1 ring-primary/20">
+              {pendingCount} pending review
+            </span>
+          )}
         </h2>
         <div className="mt-3 overflow-x-auto rounded-2xl bg-surface shadow-sm ring-1 ring-border">
           <table className="w-full text-left text-sm">
@@ -159,7 +174,8 @@ export default async function AdminPage(props: PageProps<"/admin">) {
               <tr className="border-b border-border text-muted">
                 <th className="px-3 py-2 font-medium">Name(s)</th>
                 <th className="px-3 py-2 font-medium">Phone</th>
-                <th className="px-3 py-2 font-medium">Count</th>
+                <th className="px-3 py-2 font-medium">Adults</th>
+                <th className="px-3 py-2 font-medium">Children</th>
                 <th className="px-3 py-2 font-medium">Date</th>
                 <th className="px-3 py-2 font-medium">Event</th>
                 <th className="px-3 py-2 font-medium">Status</th>
@@ -169,38 +185,38 @@ export default async function AdminPage(props: PageProps<"/admin">) {
             <tbody>
               {registrations.map((registration) => {
                 const event = (registration.events as { title: string; start_time: string }[] | null)?.[0];
-                const isWaitlisted = registration.status === "waitlisted";
+                const isConfirmed = registration.status === "confirmed";
                 return (
                   <tr key={registration.id} className="border-b border-border last:border-0">
                     <td className="px-3 py-2 text-foreground">{registration.name}</td>
-                    <td className="px-3 py-2 text-foreground">{registration.phone}</td>
-                    <td className="px-3 py-2 text-muted">{registration.attendee_count}</td>
+                    <td className="px-3 py-2 text-foreground">{registration.phone ?? "—"}</td>
+                    <td className="px-3 py-2 text-muted">{registration.adult_count}</td>
+                    <td className="px-3 py-2 text-muted">{registration.child_count}</td>
                     <td className="px-3 py-2 text-muted">{event ? formatDate(event.start_time) : "—"}</td>
                     <td className="px-3 py-2 text-muted">{event?.title ?? "—"}</td>
                     <td className="px-3 py-2">
                       <span
                         className={
-                          isWaitlisted
-                            ? "rounded-full bg-surface-muted px-2 py-0.5 text-xs font-medium text-muted ring-1 ring-border"
-                            : "rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary ring-1 ring-primary/20"
+                          isConfirmed
+                            ? "rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary ring-1 ring-primary/20"
+                            : "rounded-full bg-surface-muted px-2 py-0.5 text-xs font-medium text-muted ring-1 ring-border"
                         }
                       >
-                        {isWaitlisted ? "Waitlisted" : "Confirmed"}
+                        {STATUS_LABELS[registration.status] ?? registration.status}
                       </span>
                     </td>
                     <td className="px-3 py-2">
                       <div className="flex flex-wrap gap-2">
-                        <form
-                          action={setRegistrationStatusAction.bind(
-                            null,
-                            registration.id,
-                            isWaitlisted ? "confirmed" : "waitlisted"
-                          )}
-                        >
-                          <button type="submit" className="text-primary underline underline-offset-2">
-                            {isWaitlisted ? "Confirm" : "Waitlist"}
-                          </button>
-                        </form>
+                        {STATUS_ACTIONS.filter((action) => action.value !== registration.status).map((action) => (
+                          <form
+                            key={action.value}
+                            action={setRegistrationStatusAction.bind(null, registration.id, action.value)}
+                          >
+                            <button type="submit" className="text-primary underline underline-offset-2">
+                              {action.label}
+                            </button>
+                          </form>
+                        ))}
                         <form action={deleteRegistrationAction.bind(null, registration.id)}>
                           <button type="submit" className="text-danger underline underline-offset-2">
                             Delete
@@ -213,7 +229,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
               })}
               {registrations.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-3 py-4 text-center text-muted">
+                  <td colSpan={8} className="px-3 py-4 text-center text-muted">
                     No registrations yet.
                   </td>
                 </tr>
@@ -243,7 +259,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
                 return (
                   <tr key={registration.id} className="border-b border-border last:border-0">
                     <td className="px-3 py-2 text-foreground">{registration.contact_name}</td>
-                    <td className="px-3 py-2 text-foreground">{registration.phone}</td>
+                    <td className="px-3 py-2 text-foreground">{registration.phone ?? "—"}</td>
                     <td className="px-3 py-2 text-muted">{event ? formatDate(event.start_time) : "—"}</td>
                     <td className="px-3 py-2 text-muted">{registration.dish_name}</td>
                   </tr>

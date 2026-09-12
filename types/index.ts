@@ -10,8 +10,10 @@ export type Registration = {
   id: string;
   event_id: string;
   name: string;
-  phone: string;
-  attendee_count: number;
+  phone: string | null;
+  adult_count: number;
+  child_count: number;
+  status: "confirmed" | "waitlisted";
   created_at: string;
 };
 
@@ -35,11 +37,14 @@ export type RegistrationCount = {
   count: number;
 };
 
+export type QuantitySize = "family_pack" | "quarter_pack" | "half_tray" | "full_tray";
+
 export type FoodRegistration = {
   id: string;
   event_id: string;
   contact_name: string;
-  phone: string;
+  phone: string | null;
   dish_name: string;
+  quantity_size: QuantitySize;
   created_at: string;
 };

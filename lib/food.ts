@@ -21,12 +21,13 @@ function withTimeout<T>(
 }
 
 // Goes through the claimed_dishes(event_id) RPC (see
-// supabase/migrations/20260911235445_registration_refinements.sql) rather than
+// supabase/migrations/20260911195318_food_registrations.sql) rather than
 // `select dish_name from food_registrations` — there is no public SELECT
 // policy on food_registrations (it holds the contact's name and phone
-// number), so a direct query would be blocked by RLS. The RPC is a SECURITY
-// DEFINER function that returns only the dish names, scoped to one day of
-// the festival so a dish claimed on a different day doesn't show as taken.
+// number), so a direct query would be blocked by RLS. The RPC is a
+// SECURITY DEFINER function that returns only the dish names, scoped to
+// one day of the festival. Duplicate dishes on the same day are fine on
+// purpose — plenty of visitors, no need to avoid repeats.
 export async function getClaimedDishes(eventId: string): Promise<string[]> {
   if (!isSupabaseConfigured) return [];
 

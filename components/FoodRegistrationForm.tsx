@@ -42,14 +42,15 @@ export default function FoodRegistrationForm({ eventId }: { eventId: string }) {
           </tr>
           <tr>
             <td className="w-2/5 py-1 pr-3 align-middle font-medium text-foreground">
-              <label htmlFor={`${eventId}-phone`}>Phone number</label>
+              <label htmlFor={`${eventId}-phone`}>
+                Phone number <span className="font-normal text-muted">(optional)</span>
+              </label>
             </td>
             <td className="py-1">
               <input
                 id={`${eventId}-phone`}
                 name="phone"
                 type="tel"
-                required
                 autoComplete="tel"
                 className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
               />
@@ -68,6 +69,9 @@ export default function FoodRegistrationForm({ eventId }: { eventId: string }) {
                 placeholder="e.g. Modak, Puliyodarai, Kheer"
                 className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
               />
+              <p className="mt-1 text-xs text-muted">
+                Bringing the same dish as someone else is totally fine — no need to check first.
+              </p>
             </td>
           </tr>
         </tbody>

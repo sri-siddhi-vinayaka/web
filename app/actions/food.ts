@@ -10,10 +10,10 @@ export type FoodRegisterState =
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // No pre-check for an already-claimed dish before inserting — food_registrations
-// has no public SELECT policy (see supabase/migrations/20260911195318_food_registrations.sql),
-// and two people bringing the same dish is a social coordination problem, not
-// a data-integrity one. The claimed-dishes list on the page is there so people
-// can self-select something different before they submit.
+// has no public SELECT policy (see supabase/migrations/20260911195318_food_registrations.sql).
+// Duplicate dishes on the same day are fine on purpose (plenty of visitors,
+// repeats are expected) — the claimed-dishes list is for visibility, not
+// deduplication. Phone is optional, same reasoning as Pooja registration.
 export async function registerFood(
   _prevState: FoodRegisterState,
   formData: FormData
@@ -26,10 +26,10 @@ export async function registerFood(
   if (!UUID_RE.test(eventId)) {
     return { status: "error", message: "Please choose which day you'll bring your dish." };
   }
-  if (!contactName || !phone || !dishName) {
+  if (!contactName || !dishName) {
     return {
       status: "error",
-      message: "Contact name, phone number, and dish are all required.",
+      message: "Contact name and dish are required.",
     };
   }
   if (!isSupabaseConfigured) {
@@ -39,7 +39,7 @@ export async function registerFood(
   const { error } = await supabase.from("food_registrations").insert({
     event_id: eventId,
     contact_name: contactName,
-    phone,
+    phone: phone || null,
     dish_name: dishName,
   });
 

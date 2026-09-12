@@ -20,16 +20,8 @@ export default function RegistrationForm({
         role="status"
         className="rounded-xl bg-surface-muted p-4 text-sm font-medium text-foreground ring-1 ring-border"
       >
-        {state.registrationStatus === "confirmed" ? (
-          <>You&apos;re registered for {eventTitle}. See you there!</>
-        ) : (
-          <>
-            Only 2 confirmed spots are guaranteed per day, and {eventTitle}
-            &apos;s are both taken — you&apos;ve been added to the waiting
-            list. Check the other days above for one that still has room, or
-            check back here in case a spot opens up.
-          </>
-        )}
+        Thanks for registering for {eventTitle}! The admin team will
+        confirm your slot after reviewing it — please allow some time.
       </p>
     );
   }
@@ -54,6 +46,9 @@ export default function RegistrationForm({
                 placeholder="e.g. Raj Patel & family"
                 className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
               />
+              <p className="mt-1 text-xs text-muted">
+                Shown publicly once confirmed — include a last name so it&apos;s not confused with someone else&apos;s.
+              </p>
             </td>
           </tr>
           <tr>
@@ -73,16 +68,33 @@ export default function RegistrationForm({
           </tr>
           <tr>
             <td className="w-2/5 py-1 pr-3 align-middle font-medium text-foreground">
-              <label htmlFor={`${eventId}-attendee_count`}>People attending</label>
+              <label htmlFor={`${eventId}-adult_count`}>Adults</label>
             </td>
             <td className="py-1">
               <input
-                id={`${eventId}-attendee_count`}
-                name="attendee_count"
+                id={`${eventId}-adult_count`}
+                name="adult_count"
                 type="number"
-                min={1}
+                min={0}
                 step={1}
                 defaultValue={1}
+                required
+                className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
+              />
+            </td>
+          </tr>
+          <tr>
+            <td className="w-2/5 py-1 pr-3 align-middle font-medium text-foreground">
+              <label htmlFor={`${eventId}-child_count`}>Children</label>
+            </td>
+            <td className="py-1">
+              <input
+                id={`${eventId}-child_count`}
+                name="child_count"
+                type="number"
+                min={0}
+                step={1}
+                defaultValue={0}
                 required
                 className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
               />

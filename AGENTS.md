@@ -76,21 +76,24 @@ policies are the entire security boundary.**
 - `events`, `announcements`, `gallery_items`: public `select`, admin-only write.
 - `food_registrations`: public `insert` only. `registrations` (Pooja) has
   **no public insert policy at all** — writes go exclusively through the
-  `register_for_event(event_id, name, phone, attendee_count)` SECURITY
-  DEFINER RPC, which atomically caps confirmed sign-ups at 2 per day
-  (advisory-locked per event_id to avoid a race between concurrent
-  sign-ups) and waitlists the rest; a raw insert policy would let a caller
-  bypass that cap by writing `status='confirmed'` directly. Neither table
-  has a public `select` on the table itself — reading either would expose
-  every registrant's/volunteer's phone number to anyone with the anon key.
-  Read/update/delete are admin-only. Two narrow, deliberate exceptions expose
-  one non-PII column each via a SECURITY DEFINER RPC, never a raw select
-  policy: `claimed_dishes(event_id)` (dish names, so people can avoid
-  duplicate dishes) and `registered_names(event_id)` (registrant names,
-  confirmed ones only, publicly visible by design — "who's secured this
-  day" — but never phone numbers). Follow this same pattern for future
-  public-but-scoped reads or writes;
-  never widen the table's own select policy instead.
+  `register_for_event(event_id, name, phone, adult_count, child_count)`
+  SECURITY DEFINER RPC. Every sign-up lands as `status = 'pending'` —
+  nothing auto-confirms a spot; admin reviews each one from `/admin` and
+  manually moves it to `confirmed` or `waitlisted`. A raw insert policy
+  would let a caller bypass that by writing `status='confirmed'` directly.
+  Neither table has a public `select` on the table itself — reading either
+  would expose every registrant's/volunteer's phone number (required for
+  Pooja, optional for Food, but never public either way) to anyone with the
+  anon key.
+  Read/update/delete are admin-only. Two narrow, deliberate exceptions
+  expose non-PII columns via a SECURITY DEFINER RPC, never a raw select
+  policy: `claimed_dishes(event_id)` (dish name only — duplicate dishes are
+  fine on purpose, no need to check first) and `registered_details(event_id)`
+  (name + adult/child counts, confirmed ones only, publicly visible by
+  design — "who's secured this day" — but never phone numbers). Follow
+  this same pattern for future public-but-scoped reads or writes; never
+  widen the table's own
+  select policy instead.
 - Migrations are versioned files under `supabase/migrations/` (CLI
   timestamp-prefixed naming). Pushing to `develop` auto-applies new ones to
   staging via `.github/workflows/deploy-migrations.yml` — see
@@ -108,6 +111,13 @@ public by design and belongs in `NEXT_PUBLIC_SUPABASE_ANON_KEY`. The
 **service role** key bypasses RLS entirely — it must never appear in a
 `NEXT_PUBLIC_*` var, a Client Component, or a committed file. `.env*` is
 gitignored; keep it that way.
+
+`RESEND_API_KEY` / `ADMIN_ALERT_EMAIL` (see `lib/notify.ts`) are optional
+and server-only — a new Pooja registration still works with neither set,
+it just doesn't email admin (fail-soft, same posture as everything else
+here). Resend specifically, not an SMS provider: its free tier is
+genuinely free indefinitely; every SMS API charges per message with no
+real free tier, a hard no under this project's $0 budget.
 
 ## Design tokens
 
