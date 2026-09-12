@@ -76,9 +76,9 @@ export const CRICKET_TOURNAMENTS: {
     year: 2025,
     leagueUrl: "https://cricclubs.com/HenricoCricketLeague/viewLeague.do?league=22&clubId=23078",
     videos: [
-      { label: "Final match", url: "https://www.youtube.com/live/GG8e-pDgYMk?si=75usDEUopVAT_8-t" },
       { label: "SF1 match", url: "https://www.youtube.com/live/YTa68t1GOi0?si=ygjy2WLqruJn46wO" },
       { label: "SF2 match", url: "https://www.youtube.com/live/219MkaRja4s?si=E5eAsKGXMPED12S6" },
+      { label: "Final match", url: "https://www.youtube.com/live/GG8e-pDgYMk?si=75usDEUopVAT_8-t" },
       { label: "Fun event: Ball out challenge", url: "https://www.youtube.com/live/2BaLLBTkbiQ?si=TrSuCgJ-sZM9Oe71" },
       { label: "Post match presentation", url: "https://www.youtube.com/live/vLsXFjW4u_8?si=UyQ-TcGAOwA_l7dw" },
     ],
