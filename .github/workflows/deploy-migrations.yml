@@ -1,9 +1,9 @@
 name: Deploy database migrations
 
-# Pushes supabase/migrations/*.sql to the staging Supabase project whenever
-# they change on develop, via the official Supabase CLI (`supabase db push`)
-# rather than a hand-rolled psql script — one less thing this volunteer
-# project has to maintain itself.
+# Pushes supabase/migrations/*.sql to the staging and production Supabase
+# projects whenever they change on develop/main respectively, via the
+# official Supabase CLI (`supabase db push`) rather than a hand-rolled psql
+# script — one less thing this volunteer project has to maintain itself.
 #
 # The "staging" GitHub Environment (Settings -> Environments) holds
 # SUPABASE_STAGING_DB_PASSWORD as a secret and SUPABASE_STAGING_PROJECT_REF
@@ -13,21 +13,36 @@ name: Deploy database migrations
 # workflow now (see the --db-url comment below) — left in place in case a
 # future step needs the Management API.
 #
-# Only wired up for staging so far, matching the one Supabase project that
-# currently exists. To extend this to production once that project exists:
-# duplicate the "push" job below pointed at a new "production" Environment
-# (with its own SUPABASE_PRODUCTION_DB_PASSWORD secret and
-# SUPABASE_PRODUCTION_PROJECT_REF variable, deploy-restricted to main), gated
-# on `github.ref == 'refs/heads/main'`.
+# The "production" Environment mirrors it for the production project:
+# SUPABASE_PRODUCTION_DB_PASSWORD (secret), SUPABASE_PRODUCTION_PROJECT_REF
+# (variable), and SUPABASE_PRODUCTION_POOLER_HOST (variable) — the full
+# pooler host Supabase's dashboard shows for that project (Project Settings
+# -> Database -> Connection pooling), e.g.
+# "aws-0-us-east-1.pooler.supabase.com". Kept as its own variable instead of
+# composed from a region, unlike the hardcoded staging host below, so
+# nothing here has to guess at production's region or cloud provider ahead
+# of that project actually existing. Deploy-restrict this Environment to
+# main the same way staging is restricted to develop.
+#
+# The "production" Environment doesn't exist yet as of this workflow
+# change — GitHub auto-creates an Environment the first time a job
+# references it, but with none of the variables/secrets above configured.
+# Until someone adds them under Settings -> Environments, a push to main
+# touching supabase/migrations/** will run push-production and it will
+# fail loudly (an empty project ref/password in the db-url), not silently
+# skip — same fail-loud posture as lib/supabase.ts in production. That's
+# the intended state until the production Supabase project actually exists
+# and those values are filled in.
 on:
   push:
-    branches: [develop]
+    branches: [develop, main]
     paths:
       - "supabase/migrations/**"
   workflow_dispatch:
 
 jobs:
-  push:
+  push-staging:
+    if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     environment: staging
     steps:
@@ -59,9 +74,10 @@ jobs:
       # pooler host route to the right project's database.
       #
       # us-east-1 is this staging project's region (Project Settings ->
-      # General) — hardcoded rather than a variable since there's only one
-      # Supabase project to point at right now; revisit if a differently-
-      # regioned production project is added later.
+      # General) — hardcoded rather than a variable since staging is the
+      # only project this job ever points at. The production job below
+      # takes its pooler host as a variable instead, since that project's
+      # region isn't known ahead of it existing.
       #
       # 20260809032937 through 20260911235445 (0001-0004, before this
       # renaming/CI automation existed) were applied by hand via the SQL
@@ -88,3 +104,31 @@ jobs:
         env:
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_STAGING_DB_PASSWORD }}
           SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
+
+  push-production:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # No "reconcile pre-CI-managed migration history" step here, unlike
+      # staging — that step exists only because staging had migrations
+      # applied by hand via the SQL Editor before this pipeline existed.
+      # Once the production project exists and every migration up to that
+      # point is applied through it from the start, `db push` alone can
+      # apply the full history cleanly with nothing to reconcile. If
+      # production ever needs a manual SQL Editor fix outside this
+      # pipeline before it's fully cut over, add the equivalent repair step
+      # here first — same reasoning as the staging step above.
+      - name: Push migrations to production
+        run: |
+          supabase db push --yes --db-url "postgresql://postgres.${SUPABASE_PROJECT_REF}:${SUPABASE_DB_PASSWORD}@${SUPABASE_POOLER_HOST}:5432/postgres"
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_PRODUCTION_DB_PASSWORD }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
+          SUPABASE_POOLER_HOST: ${{ vars.SUPABASE_PRODUCTION_POOLER_HOST }}
