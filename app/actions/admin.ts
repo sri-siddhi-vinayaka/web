@@ -75,3 +75,44 @@ export async function deleteGalleryItemAction(id: string): Promise<void> {
   revalidatePath("/admin");
   revalidatePath("/gallery");
 }
+
+// The <input type="datetime-local"> this backs gives a plain
+// "YYYY-MM-DDTHH:mm" with no timezone — same simplification FESTIVAL_START/
+// END already make in lib/config.ts: treat it as America/New_York and
+// hardcode the EDT offset. Wrong for events entered after the fall-back to
+// EST, same known limitation noted there.
+export async function createEventAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+
+  const title = String(formData.get("title") ?? "").trim();
+  const dayNumber = Number(formData.get("day_number"));
+  const startTimeLocal = String(formData.get("start_time") ?? "");
+  const description = String(formData.get("description") ?? "").trim();
+
+  if (!title || !Number.isInteger(dayNumber) || dayNumber < 1 || !startTimeLocal) return;
+
+  const startTime = new Date(`${startTimeLocal}:00-04:00`);
+  if (Number.isNaN(startTime.getTime())) return;
+
+  await supabaseAdmin.from("events").insert({
+    title,
+    day_number: dayNumber,
+    start_time: startTime.toISOString(),
+    description,
+  });
+  revalidatePath("/admin");
+  revalidatePath("/schedule");
+  revalidatePath("/register/pooja");
+  revalidatePath("/register/food");
+  revalidatePath("/");
+}
+
+export async function deleteEventAction(id: string): Promise<void> {
+  await requireAdmin();
+  await supabaseAdmin.from("events").delete().eq("id", id);
+  revalidatePath("/admin");
+  revalidatePath("/schedule");
+  revalidatePath("/register/pooja");
+  revalidatePath("/register/food");
+  revalidatePath("/");
+}
