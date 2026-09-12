@@ -49,3 +49,7 @@ to service_role;
 -- but then tried to reapply 0001-0004, which were already applied by hand
 -- before this pipeline existed; the workflow now repairs that history
 -- first.)
+--
+-- (Fourth comment-only touch, same reason — that repair turned out to be
+-- wrong: only 0001-0003 were actually applied by hand, 0004 wasn't. The
+-- workflow now corrects that specific mistake before pushing for real.)
