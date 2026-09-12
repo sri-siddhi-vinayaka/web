@@ -16,7 +16,12 @@
 -- in the database, guarded by a per-event advisory lock that serializes
 -- concurrent sign-ups for the same day.
 
-alter table registrations add column status text not null default 'confirmed'
+-- IF NOT EXISTS / IF EXISTS on these two: this migration failed partway
+-- through on an earlier CI misconfiguration, and depending on whether the
+-- CLI wraps a migration file in one transaction, these may have already
+-- run. Everything below is CREATE OR REPLACE / GRANT / REVOKE, already
+-- safe to repeat.
+alter table registrations add column if not exists status text not null default 'confirmed'
   check (status in ('confirmed', 'waitlisted'));
 
 -- Replaces the direct "anyone can register for an event" INSERT policy —
@@ -24,7 +29,7 @@ alter table registrations add column status text not null default 'confirmed'
 -- decides and returns the assigned status atomically. A raw INSERT policy
 -- would let a caller bypass the cap entirely by writing status='confirmed'
 -- straight into the table.
-drop policy "anyone can register for an event" on registrations;
+drop policy if exists "anyone can register for an event" on registrations;
 
 create or replace function public.register_for_event(
   p_event_id uuid,
