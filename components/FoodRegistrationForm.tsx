@@ -1,18 +1,12 @@
 "use client";
 
 import { useActionState } from "react";
-import { registerForEvent, type RegisterState } from "@/app/actions/register";
+import { registerFood, type FoodRegisterState } from "@/app/actions/food";
 
-const initialState: RegisterState = { status: "idle" };
+const initialState: FoodRegisterState = { status: "idle" };
 
-export default function RegistrationForm({
-  eventId,
-  eventTitle,
-}: {
-  eventId: string;
-  eventTitle: string;
-}) {
-  const [state, formAction, pending] = useActionState(registerForEvent, initialState);
+export default function FoodRegistrationForm({ eventId }: { eventId: string }) {
+  const [state, formAction, pending] = useActionState(registerFood, initialState);
 
   if (state.status === "success") {
     return (
@@ -20,16 +14,7 @@ export default function RegistrationForm({
         role="status"
         className="rounded-xl bg-surface-muted p-4 text-sm font-medium text-foreground ring-1 ring-border"
       >
-        {state.registrationStatus === "confirmed" ? (
-          <>You&apos;re registered for {eventTitle}. See you there!</>
-        ) : (
-          <>
-            Only 2 confirmed spots are guaranteed per day, and {eventTitle}
-            &apos;s are both taken — you&apos;ve been added to the waiting
-            list. Check the other days above for one that still has room, or
-            check back here in case a spot opens up.
-          </>
-        )}
+        Thank you! You&apos;re signed up to bring a dish — see you there.
       </p>
     );
   }
@@ -42,16 +27,15 @@ export default function RegistrationForm({
         <tbody>
           <tr>
             <td className="w-2/5 py-1 pr-3 align-middle font-medium text-foreground">
-              <label htmlFor={`${eventId}-name`}>Name(s)</label>
+              <label htmlFor={`${eventId}-contact_name`}>Contact name</label>
             </td>
             <td className="py-1">
               <input
-                id={`${eventId}-name`}
-                name="name"
+                id={`${eventId}-contact_name`}
+                name="contact_name"
                 type="text"
                 required
                 autoComplete="name"
-                placeholder="e.g. Raj Patel & family"
                 className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
               />
             </td>
@@ -73,17 +57,15 @@ export default function RegistrationForm({
           </tr>
           <tr>
             <td className="w-2/5 py-1 pr-3 align-middle font-medium text-foreground">
-              <label htmlFor={`${eventId}-attendee_count`}>People attending</label>
+              <label htmlFor={`${eventId}-dish_name`}>Dish you&apos;ll bring</label>
             </td>
             <td className="py-1">
               <input
-                id={`${eventId}-attendee_count`}
-                name="attendee_count"
-                type="number"
-                min={1}
-                step={1}
-                defaultValue={1}
+                id={`${eventId}-dish_name`}
+                name="dish_name"
+                type="text"
                 required
+                placeholder="e.g. Modak, Puliyodarai, Kheer"
                 className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
               />
             </td>
@@ -99,10 +81,10 @@ export default function RegistrationForm({
 
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || !eventId}
         className="min-h-11 rounded-lg bg-primary px-4 py-2 font-medium text-primary-contrast transition-opacity hover:opacity-90 disabled:opacity-60"
       >
-        {pending ? "Registering…" : "Register"}
+        {pending ? "Signing up…" : "Sign up to bring a dish"}
       </button>
     </form>
   );

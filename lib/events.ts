@@ -93,6 +93,26 @@ export function getTodayHighlights(events: EventItem[], now: Date = new Date()):
   return events.filter((event) => event.day_number === dayNumber);
 }
 
+// getEvents() orders by day_number then start_time, so the first event seen
+// for a given day_number is that day's earliest — a reasonable stand-in for
+// "the day" itself, since there's no separate festival-days table. Used by
+// both registration flows, which register per-day rather than per-pooja.
+export function dedupeByDay(events: EventItem[]): EventItem[] {
+  const seenDays = new Set<number>();
+  return events.filter((event) => {
+    if (seenDays.has(event.day_number)) return false;
+    seenDays.add(event.day_number);
+    return true;
+  });
+}
+
+// Registration only makes sense for today or a day still ahead — a day that
+// already happened isn't worth showing, let alone registering for.
+export function getUpcomingDays(days: EventItem[], now: Date = new Date()): EventItem[] {
+  const todayKey = calendarDateKey(now);
+  return days.filter((day) => calendarDateKey(new Date(day.start_time)) >= todayKey);
+}
+
 export async function getAnnouncements(): Promise<Announcement[]> {
   if (!isSupabaseConfigured) return [];
 
@@ -134,7 +154,7 @@ export async function getGalleryItems(): Promise<GalleryItem[]> {
 }
 
 // Deliberately goes through the `registration_count` RPC (see
-// infra/migrations/0002_registration_count_broadcast.sql) rather than
+// supabase/migrations/20260911022120_registration_count_broadcast.sql) rather than
 // `select count(*) from registrations` — there is no public SELECT policy on
 // registrations (it holds every registrant's name and phone number), so a
 // direct count query would be blocked by RLS. The RPC is a SECURITY DEFINER
@@ -153,5 +173,31 @@ export async function getRegistrationCount(eventId: string): Promise<number> {
     return data ?? 0;
   } catch (e) {
     return logAndFallback("getRegistrationCount", e as { message: string }, 0);
+  }
+}
+
+// Names (never phone numbers) are deliberately public per day — visitors can
+// see who's already registered, the same way the Food flow shows claimed
+// dishes. Goes through the registered_names() RPC (see
+// supabase/migrations/20260912_public_registered_names.sql): registrations
+// still has no public SELECT policy, so phone numbers stay unreachable —
+// this SECURITY DEFINER function returns only the name column.
+export async function getRegisteredNames(eventId: string): Promise<string[]> {
+  if (!isSupabaseConfigured) return [];
+
+  try {
+    const { data, error } = await withTimeout(
+      supabase.rpc("registered_names", { p_event_id: eventId }) as unknown as Promise<{
+        data: { name: string }[] | null;
+        error: { message: string } | null;
+      }>,
+      800,
+      "getRegisteredNames"
+    );
+
+    if (error) return logAndFallback("getRegisteredNames", error, []);
+    return (data ?? []).map((row) => row.name);
+  } catch (e) {
+    return logAndFallback("getRegisteredNames", e as { message: string }, []);
   }
 }

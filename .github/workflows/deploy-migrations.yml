@@ -1,0 +1,45 @@
+name: Deploy database migrations
+
+# Pushes supabase/migrations/*.sql to the staging Supabase project whenever
+# they change on develop, via the official Supabase CLI (`supabase db push`)
+# rather than a hand-rolled psql script — one less thing this volunteer
+# project has to maintain itself.
+#
+# The "staging" GitHub Environment (Settings -> Environments) holds
+# SUPABASE_ACCESS_TOKEN + SUPABASE_STAGING_DB_PASSWORD as secrets and
+# SUPABASE_STAGING_PROJECT_REF as a variable, restricted to deploy only from
+# the develop branch — an extra guarantee on top of this workflow's own
+# `on: push: branches: [develop]`.
+#
+# Only wired up for staging so far, matching the one Supabase project that
+# currently exists. To extend this to production once that project exists:
+# duplicate the "push" job below pointed at a new "production" Environment
+# (with its own SUPABASE_PRODUCTION_DB_PASSWORD secret and
+# SUPABASE_PRODUCTION_PROJECT_REF variable, deploy-restricted to main), gated
+# on `github.ref == 'refs/heads/main'`.
+on:
+  push:
+    branches: [develop]
+    paths:
+      - "supabase/migrations/**"
+  workflow_dispatch:
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Push migrations to staging
+        run: |
+          supabase link --project-ref "$SUPABASE_PROJECT_REF"
+          supabase db push
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_STAGING_DB_PASSWORD }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}

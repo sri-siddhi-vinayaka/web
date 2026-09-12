@@ -1,0 +1,8 @@
+# Minimal config so the Supabase CLI recognizes this as a Supabase project
+# and finds supabase/migrations/. There's no local Supabase stack running
+# for this project (no `supabase start`) — CI links directly to the
+# staging/production project via `--project-ref` (see
+# .github/workflows/deploy-migrations.yml), so the sections a full
+# `supabase init` normally generates (api, db, studio ports, auth, etc.)
+# are deliberately omitted rather than left as unused defaults.
+project_id = "sri-siddhi-vinayaka"
