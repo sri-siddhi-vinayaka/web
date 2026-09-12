@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { NAV_LINKS } from "@/lib/config";
 
@@ -37,34 +38,44 @@ export default function MobileNav() {
         </svg>
       </button>
 
-      {open && (
-        <>
-          {/* Backdrop closes the menu on outside tap; sits below the panel
-              (z-10) but above the rest of the page. */}
-          <button
-            type="button"
-            aria-label="Close menu"
-            tabIndex={-1}
-            onClick={() => setOpen(false)}
-            className="fixed inset-0 z-10 cursor-default"
-          />
-          <nav
-            id="mobile-nav-menu"
-            className="absolute right-0 top-full z-20 mt-2 w-56 rounded-2xl bg-surface p-2 shadow-lg ring-1 ring-border"
-          >
-            {NAV_LINKS.slice(1).map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setOpen(false)}
-                className="block min-h-11 rounded-lg px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-surface-muted"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-        </>
-      )}
+      {/* Portaled to document.body rather than rendered in place: SiteHeader
+          has `backdrop-blur`, and a `backdrop-filter` (like `filter` or
+          `transform`) creates a new containing block for `position: fixed`
+          descendants — that trapped this backdrop inside the header's own
+          ~56px box instead of the full viewport, so tapping anywhere below
+          the header (i.e. almost the whole screen) never closed the menu,
+          only the header bar itself did. Portaling escapes that. Since
+          `open` starts `false` and can only become `true` from a client-side
+          click, this branch never runs during SSR — no `document` guard
+          needed. */}
+      {open &&
+        createPortal(
+          <>
+            <button
+              type="button"
+              aria-label="Close menu"
+              tabIndex={-1}
+              onClick={() => setOpen(false)}
+              className="fixed inset-0 z-10 cursor-default sm:hidden"
+            />
+            <nav
+              id="mobile-nav-menu"
+              className="fixed right-4 top-16 z-20 w-56 rounded-2xl bg-surface p-2 shadow-lg ring-1 ring-border sm:hidden"
+            >
+              {NAV_LINKS.slice(1).map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setOpen(false)}
+                  className="block min-h-11 rounded-lg px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-surface-muted"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          </>,
+          document.body
+        )}
     </div>
   );
 }
