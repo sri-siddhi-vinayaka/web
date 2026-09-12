@@ -80,36 +80,39 @@ export default function NotificationOptIn() {
     }
   }
 
-  if (status === "checking" || status === "unsupported" || status === "unconfigured") {
+  // Once subscribed there's nothing actionable or informative left to show —
+  // no admin-status feed exists for this to preview, so the section would
+  // just be a static sentence forever. Render nothing, section wrapper
+  // (owned here, not by the parent page) included.
+  if (status === "checking" || status === "unsupported" || status === "unconfigured" || status === "subscribed") {
     return null;
   }
 
-  if (status === "subscribed") {
-    return <p className="text-sm text-muted">You&apos;ll be notified here when something new is posted.</p>;
-  }
-
-  if (status === "denied") {
-    return (
-      <p className="text-sm text-muted">
-        Notifications are blocked in your browser settings — enable them there to get notified about new posts.
-      </p>
-    );
-  }
-
   return (
-    <div className="flex flex-col items-start gap-2">
-      <p className="text-sm text-muted">Get notified here when something new is posted.</p>
-      <button
-        type="button"
-        onClick={handleEnable}
-        disabled={status === "subscribing"}
-        className="min-h-11 rounded-lg bg-surface-muted px-4 py-2 text-sm font-medium text-foreground ring-1 ring-border transition-colors hover:bg-border disabled:opacity-60"
-      >
-        {status === "subscribing" ? "Enabling…" : "Enable notifications"}
-      </button>
-      {status === "error" && (
-        <p className="text-sm font-medium text-danger">Something went wrong — please try again.</p>
-      )}
-    </div>
+    <section className="mx-auto w-full max-w-3xl rounded-2xl bg-surface p-6 shadow-sm ring-1 ring-border">
+      <h2 className="text-lg font-semibold text-foreground">Stay in the loop</h2>
+      <div className="mt-2">
+        {status === "denied" ? (
+          <p className="text-sm text-muted">
+            Notifications are blocked in your browser settings — enable them there to get notified about new posts.
+          </p>
+        ) : (
+          <div className="flex flex-col items-start gap-2">
+            <p className="text-sm text-muted">Get notified here when something new is posted.</p>
+            <button
+              type="button"
+              onClick={handleEnable}
+              disabled={status === "subscribing"}
+              className="min-h-11 rounded-lg bg-surface-muted px-4 py-2 text-sm font-medium text-foreground ring-1 ring-border transition-colors hover:bg-border disabled:opacity-60"
+            >
+              {status === "subscribing" ? "Enabling…" : "Enable notifications"}
+            </button>
+            {status === "error" && (
+              <p className="text-sm font-medium text-danger">Something went wrong — please try again.</p>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
   );
 }

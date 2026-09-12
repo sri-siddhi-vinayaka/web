@@ -100,12 +100,7 @@ export default async function Home() {
         )}
       </section>
 
-      <section className="mx-auto w-full max-w-3xl rounded-2xl bg-surface p-6 shadow-sm ring-1 ring-border">
-        <h2 className="text-lg font-semibold text-foreground">Stay in the loop</h2>
-        <div className="mt-2">
-          <NotificationOptIn />
-        </div>
-      </section>
+      <NotificationOptIn />
 
       <section className="mx-auto w-full max-w-3xl rounded-2xl bg-surface p-6 text-center shadow-sm ring-1 ring-border">
         <h2 className="text-lg font-semibold text-foreground">We&apos;d Love to See You</h2>
