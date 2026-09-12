@@ -49,7 +49,7 @@ export default async function Home() {
 
         <p className="max-w-md text-left text-base text-muted">
           Welcome! Every year we bring the community together to celebrate
-          Ganesh Chaturthi with pooja, cultural programs, and community
+          Ganesh Chaturthi with pooja, fun events, and community
           spirit. This site is your guide to the celebration — browse the
           schedule, register for events, watch live darshan, and stay
           updated, all in one place.
