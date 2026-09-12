@@ -176,28 +176,54 @@ export async function getRegistrationCount(eventId: string): Promise<number> {
   }
 }
 
-// Names (never phone numbers) are deliberately public per day — visitors can
-// see who's already registered, the same way the Food flow shows claimed
-// dishes. Goes through the registered_names() RPC (see
-// supabase/migrations/20260912_public_registered_names.sql): registrations
-// still has no public SELECT policy, so phone numbers stay unreachable —
-// this SECURITY DEFINER function returns only the name column.
-export async function getRegisteredNames(eventId: string): Promise<string[]> {
+export type RegisteredDetail = { name: string; adult_count: number; child_count: number };
+
+// Name + adult/child breakdown (never phone numbers) are deliberately
+// public per day — visitors can see who's already registered and how many
+// people, the same way the Food flow shows claimed dishes. Goes through
+// the registered_details() RPC (see
+// supabase/migrations/20260913020000_adult_child_optional_phone_food_size.sql):
+// registrations still has no public SELECT policy, so phone numbers stay
+// unreachable — this SECURITY DEFINER function returns only these columns.
+export async function getRegisteredDetails(eventId: string): Promise<RegisteredDetail[]> {
   if (!isSupabaseConfigured) return [];
 
   try {
     const { data, error } = await withTimeout(
-      supabase.rpc("registered_names", { p_event_id: eventId }) as unknown as Promise<{
-        data: { name: string }[] | null;
+      supabase.rpc("registered_details", { p_event_id: eventId }) as unknown as Promise<{
+        data: RegisteredDetail[] | null;
         error: { message: string } | null;
       }>,
       800,
-      "getRegisteredNames"
+      "getRegisteredDetails"
     );
 
-    if (error) return logAndFallback("getRegisteredNames", error, []);
-    return (data ?? []).map((row) => row.name);
+    if (error) return logAndFallback("getRegisteredDetails", error, []);
+    return data ?? [];
   } catch (e) {
-    return logAndFallback("getRegisteredNames", e as { message: string }, []);
+    return logAndFallback("getRegisteredDetails", e as { message: string }, []);
+  }
+}
+
+// Aggregate-only (see waitlisted_count() in the same migration as
+// registered_details()) — lets the public UI show "+N waitlisted" without
+// exposing who, same pattern as registration_count/claimed_dishes.
+export async function getWaitlistedCount(eventId: string): Promise<number> {
+  if (!isSupabaseConfigured) return 0;
+
+  try {
+    const { data, error } = await withTimeout(
+      supabase.rpc("waitlisted_count", { p_event_id: eventId }) as unknown as Promise<{
+        data: number | null;
+        error: { message: string } | null;
+      }>,
+      800,
+      "getWaitlistedCount"
+    );
+
+    if (error) return logAndFallback("getWaitlistedCount", error, 0);
+    return data ?? 0;
+  } catch (e) {
+    return logAndFallback("getWaitlistedCount", e as { message: string }, 0);
   }
 }

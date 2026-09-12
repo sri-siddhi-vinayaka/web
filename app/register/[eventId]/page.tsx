@@ -33,7 +33,7 @@ export default async function RegisterPage(props: PageProps<"/register/[eventId]
         <FreeRegistrationNotice />
       </div>
       <div className="mt-6">
-        <RegistrationForm eventId={event.id} eventTitle={event.title} />
+        <RegistrationForm eventId={event.id} eventTitle={event.title} otherOpenDays={[]} />
       </div>
     </div>
   );

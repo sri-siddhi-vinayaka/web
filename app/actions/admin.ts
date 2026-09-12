@@ -85,9 +85,39 @@ export type CreateEventState =
 // "YYYY-MM-DDTHH:mm" with no timezone — same simplification FESTIVAL_START/
 // END already make in lib/config.ts: treat it as America/New_York and
 // hardcode the EDT offset. Wrong for events entered after the fall-back to
-// EST, same known limitation noted there.
-//
-// Takes (prevState, formData) rather than just (formData) — unlike the
+// EST, same known limitation noted there. Shared by create and update
+// below, which otherwise differ only in insert vs. update.
+function parseEventForm(
+  formData: FormData
+): { title: string; dayNumber: number; startTime: Date; description: string } | { error: string } {
+  const title = String(formData.get("title") ?? "").trim();
+  const dayNumber = Number(formData.get("day_number"));
+  const startTimeLocal = String(formData.get("start_time") ?? "");
+  const description = String(formData.get("description") ?? "").trim();
+
+  if (!title) return { error: "Title is required." };
+  if (!Number.isInteger(dayNumber) || dayNumber < 1) {
+    return { error: "Day # must be a whole number of 1 or more." };
+  }
+  if (!startTimeLocal) return { error: "Start time is required." };
+
+  const startTime = new Date(`${startTimeLocal}:00-04:00`);
+  if (Number.isNaN(startTime.getTime())) {
+    return { error: "That start time couldn't be parsed." };
+  }
+
+  return { title, dayNumber, startTime, description };
+}
+
+function revalidateEventPaths(): void {
+  revalidatePath("/admin");
+  revalidatePath("/schedule");
+  revalidatePath("/register/pooja");
+  revalidatePath("/register/food");
+  revalidatePath("/");
+}
+
+// Takes (prevState, formData) rather than just (formData) — unlike most
 // other admin actions on this page, this one is wired through
 // useActionState (see components/AddEventForm.tsx) so a bad day number, an
 // unparseable date, or an insert failure all surface as a visible message
@@ -98,27 +128,14 @@ export async function createEventAction(
 ): Promise<CreateEventState> {
   await requireAdmin();
 
-  const title = String(formData.get("title") ?? "").trim();
-  const dayNumber = Number(formData.get("day_number"));
-  const startTimeLocal = String(formData.get("start_time") ?? "");
-  const description = String(formData.get("description") ?? "").trim();
-
-  if (!title) return { status: "error", message: "Title is required." };
-  if (!Number.isInteger(dayNumber) || dayNumber < 1) {
-    return { status: "error", message: "Day # must be a whole number of 1 or more." };
-  }
-  if (!startTimeLocal) return { status: "error", message: "Start time is required." };
-
-  const startTime = new Date(`${startTimeLocal}:00-04:00`);
-  if (Number.isNaN(startTime.getTime())) {
-    return { status: "error", message: "That start time couldn't be parsed." };
-  }
+  const parsed = parseEventForm(formData);
+  if ("error" in parsed) return { status: "error", message: parsed.error };
 
   const { error } = await supabaseAdmin.from("events").insert({
-    title,
-    day_number: dayNumber,
-    start_time: startTime.toISOString(),
-    description,
+    title: parsed.title,
+    day_number: parsed.dayNumber,
+    start_time: parsed.startTime.toISOString(),
+    description: parsed.description,
   });
 
   if (error) {
@@ -126,22 +143,48 @@ export async function createEventAction(
     return { status: "error", message: `Couldn't save the event: ${error.message}` };
   }
 
-  revalidatePath("/admin");
-  revalidatePath("/schedule");
-  revalidatePath("/register/pooja");
-  revalidatePath("/register/food");
-  revalidatePath("/");
+  revalidateEventPaths();
+  return { status: "success" };
+}
+
+// Same (prevState, formData) + useActionState wiring as createEventAction
+// (see components/EditEventForm.tsx), plus the event id bound in ahead of
+// time via .bind(null, id) — each event's edit form binds its own id, so
+// each gets an independent useActionState instance despite sharing this
+// one action.
+export async function updateEventAction(
+  id: string,
+  _prevState: CreateEventState,
+  formData: FormData
+): Promise<CreateEventState> {
+  await requireAdmin();
+
+  const parsed = parseEventForm(formData);
+  if ("error" in parsed) return { status: "error", message: parsed.error };
+
+  const { error } = await supabaseAdmin
+    .from("events")
+    .update({
+      title: parsed.title,
+      day_number: parsed.dayNumber,
+      start_time: parsed.startTime.toISOString(),
+      description: parsed.description,
+    })
+    .eq("id", id);
+
+  if (error) {
+    console.warn("[updateEventAction]", error.message);
+    return { status: "error", message: `Couldn't save the event: ${error.message}` };
+  }
+
+  revalidateEventPaths();
   return { status: "success" };
 }
 
 export async function deleteEventAction(id: string): Promise<void> {
   await requireAdmin();
   await supabaseAdmin.from("events").delete().eq("id", id);
-  revalidatePath("/admin");
-  revalidatePath("/schedule");
-  revalidatePath("/register/pooja");
-  revalidatePath("/register/food");
-  revalidatePath("/");
+  revalidateEventPaths();
 }
 
 // Manual only, on purpose — there's no cancellation flow for a confirmed

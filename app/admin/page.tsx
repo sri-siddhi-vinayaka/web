@@ -3,6 +3,7 @@ import { isAdminRequest } from "@/lib/adminAuth";
 import { isSupabaseAdminConfigured, supabaseAdmin } from "@/lib/supabaseAdmin";
 import { getAnnouncements, getEvents, getGalleryItems } from "@/lib/events";
 import AddEventForm from "@/components/AddEventForm";
+import EditEventForm from "@/components/EditEventForm";
 import {
   addGalleryItemAction,
   createAnnouncementAction,
@@ -20,6 +21,13 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+const FOOD_SIZE_LABELS: Record<string, string> = {
+  quarter_pack: "Quarter pack",
+  half_tray: "Half tray",
+  full_tray: "Full tray",
+  family_pack: "Family pack",
+};
+
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", {
     timeZone: "America/New_York",
@@ -33,7 +41,7 @@ async function getRegistrations() {
 
   const { data, error } = await supabaseAdmin
     .from("registrations")
-    .select("id, name, phone, attendee_count, status, created_at, events(title, start_time)")
+    .select("id, name, phone, adult_count, child_count, status, created_at, events(title, start_time)")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -48,7 +56,7 @@ async function getFoodRegistrations() {
 
   const { data, error } = await supabaseAdmin
     .from("food_registrations")
-    .select("id, contact_name, phone, dish_name, created_at, events(title, start_time)")
+    .select("id, contact_name, phone, dish_name, quantity_size, created_at, events(title, start_time)")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -128,12 +136,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
               key={event.id}
               className="flex items-start justify-between gap-3 rounded-xl bg-surface p-3 text-sm ring-1 ring-border"
             >
-              <div>
-                <p className="font-medium text-foreground">
-                  Day {event.day_number} — {event.title}
-                </p>
-                <p className="text-muted">{formatDate(event.start_time)}</p>
-              </div>
+              <EditEventForm event={event} />
               <form action={deleteEventAction.bind(null, event.id)}>
                 <button type="submit" className="shrink-0 text-danger underline underline-offset-2">
                   Delete
@@ -159,7 +162,8 @@ export default async function AdminPage(props: PageProps<"/admin">) {
               <tr className="border-b border-border text-muted">
                 <th className="px-3 py-2 font-medium">Name(s)</th>
                 <th className="px-3 py-2 font-medium">Phone</th>
-                <th className="px-3 py-2 font-medium">Count</th>
+                <th className="px-3 py-2 font-medium">Adults</th>
+                <th className="px-3 py-2 font-medium">Children</th>
                 <th className="px-3 py-2 font-medium">Date</th>
                 <th className="px-3 py-2 font-medium">Event</th>
                 <th className="px-3 py-2 font-medium">Status</th>
@@ -173,8 +177,9 @@ export default async function AdminPage(props: PageProps<"/admin">) {
                 return (
                   <tr key={registration.id} className="border-b border-border last:border-0">
                     <td className="px-3 py-2 text-foreground">{registration.name}</td>
-                    <td className="px-3 py-2 text-foreground">{registration.phone}</td>
-                    <td className="px-3 py-2 text-muted">{registration.attendee_count}</td>
+                    <td className="px-3 py-2 text-foreground">{registration.phone ?? "—"}</td>
+                    <td className="px-3 py-2 text-muted">{registration.adult_count}</td>
+                    <td className="px-3 py-2 text-muted">{registration.child_count}</td>
                     <td className="px-3 py-2 text-muted">{event ? formatDate(event.start_time) : "—"}</td>
                     <td className="px-3 py-2 text-muted">{event?.title ?? "—"}</td>
                     <td className="px-3 py-2">
@@ -213,7 +218,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
               })}
               {registrations.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-3 py-4 text-center text-muted">
+                  <td colSpan={8} className="px-3 py-4 text-center text-muted">
                     No registrations yet.
                   </td>
                 </tr>
@@ -235,6 +240,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
                 <th className="px-3 py-2 font-medium">Phone</th>
                 <th className="px-3 py-2 font-medium">Date</th>
                 <th className="px-3 py-2 font-medium">Dish</th>
+                <th className="px-3 py-2 font-medium">Size</th>
               </tr>
             </thead>
             <tbody>
@@ -243,15 +249,16 @@ export default async function AdminPage(props: PageProps<"/admin">) {
                 return (
                   <tr key={registration.id} className="border-b border-border last:border-0">
                     <td className="px-3 py-2 text-foreground">{registration.contact_name}</td>
-                    <td className="px-3 py-2 text-foreground">{registration.phone}</td>
+                    <td className="px-3 py-2 text-foreground">{registration.phone ?? "—"}</td>
                     <td className="px-3 py-2 text-muted">{event ? formatDate(event.start_time) : "—"}</td>
                     <td className="px-3 py-2 text-muted">{registration.dish_name}</td>
+                    <td className="px-3 py-2 text-muted">{FOOD_SIZE_LABELS[registration.quantity_size] ?? registration.quantity_size}</td>
                   </tr>
                 );
               })}
               {foodRegistrations.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-3 py-4 text-center text-muted">
+                  <td colSpan={5} className="px-3 py-4 text-center text-muted">
                     No food registrations yet.
                   </td>
                 </tr>

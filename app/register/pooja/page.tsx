@@ -2,17 +2,24 @@ import type { Metadata } from "next";
 import DayCalendarStrip from "@/components/DayCalendarStrip";
 import FreeRegistrationNotice from "@/components/FreeRegistrationNotice";
 import PrivacyNotice from "@/components/PrivacyNotice";
-import RegisteredNamesList from "@/components/RegisteredNamesList";
+import RegisteredDetailsTable from "@/components/RegisteredDetailsTable";
 import RegistrationCount from "@/components/RegistrationCount";
 import RegistrationForm from "@/components/RegistrationForm";
-import { dedupeByDay, getEvents, getRegisteredNames, getRegistrationCount, getUpcomingDays } from "@/lib/events";
+import {
+  dedupeByDay,
+  getEvents,
+  getRegisteredDetails,
+  getRegistrationCount,
+  getUpcomingDays,
+  getWaitlistedCount,
+} from "@/lib/events";
 
 export const metadata: Metadata = { title: "Pooja Registration" };
 
 // Same reasoning as the schedule page and Food registration: no admin
 // action to hang a revalidation off, so static prerendering would freeze
-// both the day list and the live counts/names to whatever was true at the
-// last deploy.
+// both the day list and the live counts/details to whatever was true at
+// the last deploy.
 export const dynamic = "force-dynamic";
 
 function formatDate(iso: string): string {
@@ -27,14 +34,23 @@ function formatDate(iso: string): string {
 export default async function PoojaRegistrationPage() {
   const events = await getEvents();
   const days = getUpcomingDays(dedupeByDay(events));
-  const [namesByDay, countsByDay] = await Promise.all([
-    Promise.all(days.map(async (day) => [day.id, await getRegisteredNames(day.id)] as const)).then(
+  const [detailsByDay, countsByDay, waitlistedByDay] = await Promise.all([
+    Promise.all(days.map(async (day) => [day.id, await getRegisteredDetails(day.id)] as const)).then(
       (entries) => new Map(entries)
     ),
     Promise.all(days.map(async (day) => [day.id, await getRegistrationCount(day.id)] as const)).then(
       (entries) => new Map(entries)
     ),
+    Promise.all(days.map(async (day) => [day.id, await getWaitlistedCount(day.id)] as const)).then(
+      (entries) => new Map(entries)
+    ),
   ]);
+
+  // Days with an open confirmed spot, suggested to anyone who lands on a
+  // full day instead — recomputed per page load, so this can go stale
+  // between someone loading the page and submitting; the actual cap is
+  // still enforced atomically server-side regardless of what this suggests.
+  const openDays = days.filter((day) => (detailsByDay.get(day.id)?.length ?? 0) < 2);
 
   return (
     <div className="mx-auto w-full max-w-md px-4 py-10 sm:px-6">
@@ -69,7 +85,12 @@ export default async function PoojaRegistrationPage() {
 
           <div className="mt-8 flex flex-col gap-8">
             {days.map((day) => {
-              const confirmedCount = namesByDay.get(day.id)?.length ?? 0;
+              const confirmedCount = detailsByDay.get(day.id)?.length ?? 0;
+              const waitlistedCount = waitlistedByDay.get(day.id) ?? 0;
+              const otherOpenDays = openDays
+                .filter((openDay) => openDay.id !== day.id)
+                .map((openDay) => ({ dayNumber: openDay.day_number, href: `#day-${openDay.day_number}` }));
+
               return (
                 <section key={day.id} id={`day-${day.day_number}`}>
                   <h2 className="text-sm font-semibold uppercase tracking-wide text-accent">
@@ -79,17 +100,22 @@ export default async function PoojaRegistrationPage() {
                   <p className="text-xs text-muted">
                     {confirmedCount} of 2 confirmed spots filled
                     {confirmedCount >= 2 ? " — new sign-ups join the waiting list" : ""}
+                    {waitlistedCount > 0 ? ` (+${waitlistedCount} waitlisted)` : ""}
                   </p>
 
                   <div className="mt-3">
                     <h3 className="text-sm font-medium text-foreground">Already secured by</h3>
                     <div className="mt-2">
-                      <RegisteredNamesList eventId={day.id} initialNames={namesByDay.get(day.id) ?? []} />
+                      <RegisteredDetailsTable eventId={day.id} initialDetails={detailsByDay.get(day.id) ?? []} />
                     </div>
                   </div>
 
                   <div className="mt-4">
-                    <RegistrationForm eventId={day.id} eventTitle={`Day ${day.day_number}`} />
+                    <RegistrationForm
+                      eventId={day.id}
+                      eventTitle={`Day ${day.day_number}`}
+                      otherOpenDays={otherOpenDays}
+                    />
                   </div>
                 </section>
               );

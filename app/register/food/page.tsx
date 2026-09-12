@@ -44,10 +44,10 @@ export default async function FoodRegistrationPage() {
       </div>
       <div className="mt-2">
         <PrivacyNotice>
-          Only the dish name is shown here publicly, so others can avoid
-          bringing the same one. Your name and phone number stay
-          private — visible only to the event admin, and only to contact
-          you if needed.
+          Only the dish name and rough quantity are shown here publicly, to
+          help everyone plan — bringing the same dish as someone else is
+          totally fine. Your name and phone number stay private — visible
+          only to the event admin, and only to contact you if needed.
         </PrivacyNotice>
       </div>
 

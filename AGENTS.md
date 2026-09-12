@@ -76,21 +76,24 @@ policies are the entire security boundary.**
 - `events`, `announcements`, `gallery_items`: public `select`, admin-only write.
 - `food_registrations`: public `insert` only. `registrations` (Pooja) has
   **no public insert policy at all** — writes go exclusively through the
-  `register_for_event(event_id, name, phone, attendee_count)` SECURITY
-  DEFINER RPC, which atomically caps confirmed sign-ups at 2 per day
-  (advisory-locked per event_id to avoid a race between concurrent
+  `register_for_event(event_id, name, phone, adult_count, child_count)`
+  SECURITY DEFINER RPC, which atomically caps confirmed sign-ups at 2 per
+  day (advisory-locked per event_id to avoid a race between concurrent
   sign-ups) and waitlists the rest; a raw insert policy would let a caller
   bypass that cap by writing `status='confirmed'` directly. Neither table
   has a public `select` on the table itself — reading either would expose
-  every registrant's/volunteer's phone number to anyone with the anon key.
-  Read/update/delete are admin-only. Two narrow, deliberate exceptions expose
-  one non-PII column each via a SECURITY DEFINER RPC, never a raw select
-  policy: `claimed_dishes(event_id)` (dish names, so people can avoid
-  duplicate dishes) and `registered_names(event_id)` (registrant names,
-  confirmed ones only, publicly visible by design — "who's secured this
-  day" — but never phone numbers). Follow this same pattern for future
-  public-but-scoped reads or writes;
-  never widen the table's own select policy instead.
+  every registrant's/volunteer's phone number (optional on both tables, but
+  still never public) to anyone with the anon key. Read/update/delete are
+  admin-only. Two narrow, deliberate exceptions expose non-PII columns via
+  a SECURITY DEFINER RPC, never a raw select policy: `claimed_dishes(event_id)`
+  (dish name + rough quantity — duplicate dishes are fine on purpose, this
+  is for headcount planning, not deduplication) and
+  `registered_details(event_id)` (name + adult/child counts, confirmed ones
+  only, publicly visible by design — "who's secured this day" — but never
+  phone numbers); `waitlisted_count(event_id)` additionally exposes an
+  aggregate waitlist count with no names at all. Follow this same pattern
+  for future public-but-scoped reads or writes; never widen the table's own
+  select policy instead.
 - Migrations are versioned files under `supabase/migrations/` (CLI
   timestamp-prefixed naming). Pushing to `develop` auto-applies new ones to
   staging via `.github/workflows/deploy-migrations.yml` — see

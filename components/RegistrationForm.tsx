@@ -8,9 +8,11 @@ const initialState: RegisterState = { status: "idle" };
 export default function RegistrationForm({
   eventId,
   eventTitle,
+  otherOpenDays,
 }: {
   eventId: string;
   eventTitle: string;
+  otherOpenDays: { dayNumber: number; href: string }[];
 }) {
   const [state, formAction, pending] = useActionState(registerForEvent, initialState);
 
@@ -26,8 +28,23 @@ export default function RegistrationForm({
           <>
             Only 2 confirmed spots are guaranteed per day, and {eventTitle}
             &apos;s are both taken — you&apos;ve been added to the waiting
-            list. Check the other days above for one that still has room, or
-            check back here in case a spot opens up.
+            list.{" "}
+            {otherOpenDays.length > 0 ? (
+              <>
+                Still have room:{" "}
+                {otherOpenDays.map(({ dayNumber, href }, index) => (
+                  <span key={href}>
+                    {index > 0 && ", "}
+                    <a href={href} className="font-medium text-primary underline underline-offset-2">
+                      Day {dayNumber}
+                    </a>
+                  </span>
+                ))}
+                .
+              </>
+            ) : (
+              <>Check back here in case a spot opens up.</>
+            )}
           </>
         )}
       </p>
@@ -54,18 +71,22 @@ export default function RegistrationForm({
                 placeholder="e.g. Raj Patel & family"
                 className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
               />
+              <p className="mt-1 text-xs text-muted">
+                Shown publicly — include a last name so it&apos;s not confused with someone else&apos;s.
+              </p>
             </td>
           </tr>
           <tr>
             <td className="w-2/5 py-1 pr-3 align-middle font-medium text-foreground">
-              <label htmlFor={`${eventId}-phone`}>Phone number</label>
+              <label htmlFor={`${eventId}-phone`}>
+                Phone number <span className="font-normal text-muted">(optional)</span>
+              </label>
             </td>
             <td className="py-1">
               <input
                 id={`${eventId}-phone`}
                 name="phone"
                 type="tel"
-                required
                 autoComplete="tel"
                 className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
               />
@@ -73,16 +94,33 @@ export default function RegistrationForm({
           </tr>
           <tr>
             <td className="w-2/5 py-1 pr-3 align-middle font-medium text-foreground">
-              <label htmlFor={`${eventId}-attendee_count`}>People attending</label>
+              <label htmlFor={`${eventId}-adult_count`}>Adults</label>
             </td>
             <td className="py-1">
               <input
-                id={`${eventId}-attendee_count`}
-                name="attendee_count"
+                id={`${eventId}-adult_count`}
+                name="adult_count"
                 type="number"
-                min={1}
+                min={0}
                 step={1}
                 defaultValue={1}
+                required
+                className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
+              />
+            </td>
+          </tr>
+          <tr>
+            <td className="w-2/5 py-1 pr-3 align-middle font-medium text-foreground">
+              <label htmlFor={`${eventId}-child_count`}>Children</label>
+            </td>
+            <td className="py-1">
+              <input
+                id={`${eventId}-child_count`}
+                name="child_count"
+                type="number"
+                min={0}
+                step={1}
+                defaultValue={0}
                 required
                 className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
               />
