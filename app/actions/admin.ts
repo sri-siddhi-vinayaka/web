@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { sendPushToAllSubscribers } from "@/lib/webpush";
 import {
   clearAdminCookie,
   isAdminRequest,
@@ -43,9 +44,18 @@ export async function createAnnouncementAction(formData: FormData): Promise<void
   const body = String(formData.get("body") ?? "").trim();
   if (!title || !body) return;
 
-  await supabaseAdmin.from("announcements").insert({ title, body });
+  const { error } = await supabaseAdmin.from("announcements").insert({ title, body });
   revalidatePath("/admin");
   revalidatePath("/announcements");
+
+  // Push, not the admin's own inbox — notifyAdmin() in lib/notify.ts is a
+  // different direction entirely (visitor -> admin, "come review this
+  // registration"). This is admin -> visitors, "something new is here."
+  // No-ops quietly if VAPID keys aren't configured yet, same fail-soft
+  // posture as everything else optional in this app.
+  if (!error) {
+    await sendPushToAllSubscribers(title, body, "/announcements");
+  }
 }
 
 export async function deleteAnnouncementAction(id: string): Promise<void> {

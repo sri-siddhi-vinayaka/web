@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ComponentType } from "react";
 import CountdownTimer from "@/components/CountdownTimer";
 import GaneshaPhoto from "@/components/GaneshaPhoto";
+import NotificationOptIn from "@/components/NotificationOptIn";
 import ScrollIcon from "@/components/icons/ScrollIcon";
 import ClipboardIcon from "@/components/icons/ClipboardIcon";
 import ModakIcon from "@/components/icons/ModakIcon";
@@ -49,7 +50,7 @@ export default async function Home() {
 
         <p className="max-w-md text-left text-base text-muted">
           Welcome! Every year we bring the community together to celebrate
-          Ganesh Chaturthi with pooja, cultural programs, and community
+          Ganesh Chaturthi with pooja, fun events, and community
           spirit. This site is your guide to the celebration — browse the
           schedule, register for events, watch live darshan, and stay
           updated, all in one place.
@@ -97,6 +98,13 @@ export default async function Home() {
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="mx-auto w-full max-w-3xl rounded-2xl bg-surface p-6 shadow-sm ring-1 ring-border">
+        <h2 className="text-lg font-semibold text-foreground">Stay in the loop</h2>
+        <div className="mt-2">
+          <NotificationOptIn />
+        </div>
       </section>
 
       <section className="mx-auto w-full max-w-3xl rounded-2xl bg-surface p-6 text-center shadow-sm ring-1 ring-border">

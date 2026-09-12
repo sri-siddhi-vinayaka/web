@@ -18,13 +18,6 @@ export const FESTIVAL_END = new Date("2026-09-26T00:00:00-04:00");
 // the live page shows a "not started yet" message rather than a broken embed.
 export const LIVE_STREAM_URL = "";
 
-// TODO(committee): confirm the donation coordinator's name and number.
-// Donations are coordinated off-app by phone — never add a payment gateway.
-export const DONATION_CONTACT = {
-  name: "",
-  phone: "",
-};
-
 export const VENUE_ADDRESS = "2526 Kilpeck Dr, Henrico, VA";
 export const VENUE_MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(VENUE_ADDRESS)}`;
 
@@ -58,12 +51,46 @@ export const PREVIOUS_YEARS: {
   },
 ];
 
+// Memories from the association's cricket tournaments, newest year first
+// (manually ordered, same convention as PREVIOUS_YEARS above). Plain links
+// rather than embeds, even for the YouTube ones — unlike PREVIOUS_YEARS'
+// single video per year, a tournament has several (semifinals, final, post
+// -match presentation, ...), and embedding every one would be exactly the
+// "heavy client bundle" / mobile-data cost this app deliberately avoids.
+export const CRICKET_TOURNAMENTS: {
+  year: number;
+  leagueUrl: string;
+  videos: { label: string; url: string }[];
+}[] = [
+  {
+    year: 2026,
+    leagueUrl: "https://cricclubs.com/HenricoCricketLeague/viewLeague.do?league=23&clubId=23078",
+    videos: [
+      { label: "SF1 match", url: "https://youtu.be/d_Krr3FiSe0?si=6AizGLadW3Oj_ud-" },
+      { label: "SF2 match", url: "https://youtu.be/OM7HlY-3D_Y?si=JnFgPealB6RKMvMD" },
+      { label: "Final match", url: "https://youtu.be/zXLkFQSUBOQ?si=RW3ySjMdaLLvDK0E" },
+      { label: "Post match presentation", url: "https://youtu.be/mxqztePQpC8?si=kAJPTyR2gWPhgC_U" },
+    ],
+  },
+  {
+    year: 2025,
+    leagueUrl: "https://cricclubs.com/HenricoCricketLeague/viewLeague.do?league=22&clubId=23078",
+    videos: [
+      { label: "SF1 match", url: "https://www.youtube.com/live/YTa68t1GOi0?si=ygjy2WLqruJn46wO" },
+      { label: "SF2 match", url: "https://www.youtube.com/live/219MkaRja4s?si=E5eAsKGXMPED12S6" },
+      { label: "Final match", url: "https://www.youtube.com/live/GG8e-pDgYMk?si=75usDEUopVAT_8-t" },
+      { label: "Fun event: Ball out challenge", url: "https://www.youtube.com/live/2BaLLBTkbiQ?si=TrSuCgJ-sZM9Oe71" },
+      { label: "Post match presentation", url: "https://www.youtube.com/live/vLsXFjW4u_8?si=UyQ-TcGAOwA_l7dw" },
+    ],
+  },
+];
+
 export const NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/schedule", label: "Schedule" },
   { href: "/live", label: "Live Darshan" },
   { href: "/gallery", label: "Gallery" },
+  { href: "/cricket", label: "Cricket" },
   { href: "/announcements", label: "Announcements" },
-  { href: "/donate", label: "Donate" },
   { href: "/contact", label: "Contact" },
 ] as const;
