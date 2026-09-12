@@ -90,6 +90,7 @@ export const NAV_LINKS = [
   { href: "/schedule", label: "Schedule" },
   { href: "/live", label: "Live Darshan" },
   { href: "/gallery", label: "Gallery" },
+  { href: "/charity", label: "Charity" },
   { href: "/cricket", label: "Cricket" },
   { href: "/announcements", label: "Announcements" },
   { href: "/contact", label: "Contact" },

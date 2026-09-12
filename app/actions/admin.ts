@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -219,4 +220,95 @@ export async function deleteRegistrationAction(id: string): Promise<void> {
   await supabaseAdmin.from("registrations").delete().eq("id", id);
   revalidatePath("/admin");
   revalidatePath("/register/pooja");
+}
+
+// -- Charity media -----------------------------------------------------
+//
+// Uploads never pass through a Server Action's own request body — that's
+// capped at 1MB by default (Next) and ~4.5MB on Vercel's free tier
+// regardless (a platform limit, not a Next setting), well under real photo
+// or video sizes. Instead: this action hands the browser a one-time signed
+// *upload* URL, the browser PUTs the file straight to Supabase Storage
+// (components/AddCharityMediaForm.tsx), and confirmCharityMediaAction
+// below is called afterward with just the resulting path — small metadata
+// only, never the file bytes.
+
+const CHARITY_BUCKET = "charity";
+const CHARITY_MEDIA_EXTENSIONS = new Set([
+  "jpg", "jpeg", "png", "webp", "gif", "heic", "heif",
+  "mp4", "mov", "webm", "m4v",
+]);
+
+// Never trust the browser-supplied filename as a storage path directly —
+// this generates a fresh random one and keeps only a safe, allowlisted
+// extension from the original, so nothing about the original name (path
+// separators, odd characters, length) reaches Supabase Storage.
+function safeExtension(filename: string): string {
+  const match = /\.([a-zA-Z0-9]+)$/.exec(filename);
+  const ext = match?.[1]?.toLowerCase();
+  return ext && CHARITY_MEDIA_EXTENSIONS.has(ext) ? ext : "bin";
+}
+
+export async function createCharityUploadUrlAction(
+  filename: string,
+  mediaType: "image" | "video"
+): Promise<{ path: string; token: string } | { error: string }> {
+  await requireAdmin();
+
+  if (mediaType !== "image" && mediaType !== "video") {
+    return { error: "Unsupported file type." };
+  }
+
+  const path = `${mediaType}/${randomUUID()}.${safeExtension(filename)}`;
+  const { data, error } = await supabaseAdmin.storage
+    .from(CHARITY_BUCKET)
+    .createSignedUploadUrl(path);
+
+  if (error || !data) {
+    console.warn("[createCharityUploadUrlAction]", error?.message);
+    return { error: "Couldn't prepare the upload — please try again." };
+  }
+
+  return { path: data.path, token: data.token };
+}
+
+export async function confirmCharityMediaAction(
+  path: string,
+  mediaType: "image" | "video",
+  caption: string
+): Promise<{ ok: true } | { error: string }> {
+  await requireAdmin();
+
+  // Confirms the object actually landed in storage before creating a row
+  // that would otherwise point at nothing — createSignedUrl errors for a
+  // path nothing was ever uploaded to.
+  const { error: signError } = await supabaseAdmin.storage
+    .from(CHARITY_BUCKET)
+    .createSignedUrl(path, 60);
+  if (signError) {
+    return { error: "That upload didn't complete — please try again." };
+  }
+
+  const { error } = await supabaseAdmin.from("charity_media").insert({
+    storage_path: path,
+    media_type: mediaType,
+    caption: caption.trim() || null,
+  });
+
+  if (error) {
+    console.warn("[confirmCharityMediaAction]", error.message);
+    return { error: "Couldn't save that — please try again." };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/charity");
+  return { ok: true };
+}
+
+export async function deleteCharityMediaAction(id: string, storagePath: string): Promise<void> {
+  await requireAdmin();
+  await supabaseAdmin.storage.from(CHARITY_BUCKET).remove([storagePath]);
+  await supabaseAdmin.from("charity_media").delete().eq("id", id);
+  revalidatePath("/admin");
+  revalidatePath("/charity");
 }
