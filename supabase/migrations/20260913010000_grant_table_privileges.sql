@@ -32,3 +32,11 @@ grant select, insert, update, delete on
   public.registrations,
   public.food_registrations
 to service_role;
+
+-- (Comment-only touch, no SQL added above this line — retriggers
+-- deploy-migrations.yml's path-filtered push trigger now that PR #8 fixed
+-- its supabase link failure. workflow_dispatch isn't usable here since it
+-- only registers for a workflow file that exists on the repo's *default*
+-- branch, which is main, not develop — the push trigger doesn't have that
+-- restriction, so a real (if trivial) change under supabase/migrations/**
+-- is the practical way to fire it again.)
