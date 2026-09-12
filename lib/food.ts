@@ -20,24 +20,21 @@ function withTimeout<T>(
   ]);
 }
 
-export type ClaimedDish = { dish_name: string; quantity_size: string };
-
 // Goes through the claimed_dishes(event_id) RPC (see
-// supabase/migrations/20260913020000_adult_child_optional_phone_food_size.sql)
-// rather than `select ... from food_registrations` — there is no public
-// SELECT policy on food_registrations (it holds the contact's name and
-// phone number), so a direct query would be blocked by RLS. The RPC is a
-// SECURITY DEFINER function that returns only the dish name and its rough
-// size, scoped to one day of the festival. Duplicate dishes on the same
-// day are fine on purpose — this is for headcount planning, not
-// deduplication.
-export async function getClaimedDishes(eventId: string): Promise<ClaimedDish[]> {
+// supabase/migrations/20260911195318_food_registrations.sql) rather than
+// `select dish_name from food_registrations` — there is no public SELECT
+// policy on food_registrations (it holds the contact's name and phone
+// number), so a direct query would be blocked by RLS. The RPC is a
+// SECURITY DEFINER function that returns only the dish names, scoped to
+// one day of the festival. Duplicate dishes on the same day are fine on
+// purpose — plenty of visitors, no need to avoid repeats.
+export async function getClaimedDishes(eventId: string): Promise<string[]> {
   if (!isSupabaseConfigured) return [];
 
   try {
     const { data, error } = await withTimeout(
       supabase.rpc("claimed_dishes", { p_event_id: eventId }) as unknown as Promise<{
-        data: ClaimedDish[] | null;
+        data: { dish_name: string }[] | null;
         error: { message: string } | null;
       }>,
       800,
@@ -45,7 +42,7 @@ export async function getClaimedDishes(eventId: string): Promise<ClaimedDish[]> 
     );
 
     if (error) return logAndFallback("getClaimedDishes", error, []);
-    return data ?? [];
+    return (data ?? []).map((row) => row.dish_name);
   } catch (e) {
     return logAndFallback("getClaimedDishes", e as { message: string }, []);
   }

@@ -70,30 +70,8 @@ export default function FoodRegistrationForm({ eventId }: { eventId: string }) {
                 className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
               />
               <p className="mt-1 text-xs text-muted">
-                Bringing the same dish as someone else is totally fine — this just helps us plan quantities.
+                Bringing the same dish as someone else is totally fine — no need to check first.
               </p>
-            </td>
-          </tr>
-          <tr>
-            <td className="w-2/5 py-1 pr-3 align-middle font-medium text-foreground">
-              <label htmlFor={`${eventId}-quantity_size`}>Roughly how much</label>
-            </td>
-            <td className="py-1">
-              <select
-                id={`${eventId}-quantity_size`}
-                name="quantity_size"
-                required
-                defaultValue=""
-                className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
-              >
-                <option value="" disabled>
-                  Choose a rough size…
-                </option>
-                <option value="quarter_pack">Quarter pack</option>
-                <option value="half_tray">Half tray</option>
-                <option value="full_tray">Full tray</option>
-                <option value="family_pack">Family pack</option>
-              </select>
             </td>
           </tr>
         </tbody>

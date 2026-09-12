@@ -205,25 +205,3 @@ export async function getRegisteredDetails(eventId: string): Promise<RegisteredD
   }
 }
 
-// Aggregate-only (see waitlisted_count() in the same migration as
-// registered_details()) — lets the public UI show "+N waitlisted" without
-// exposing who, same pattern as registration_count/claimed_dishes.
-export async function getWaitlistedCount(eventId: string): Promise<number> {
-  if (!isSupabaseConfigured) return 0;
-
-  try {
-    const { data, error } = await withTimeout(
-      supabase.rpc("waitlisted_count", { p_event_id: eventId }) as unknown as Promise<{
-        data: number | null;
-        error: { message: string } | null;
-      }>,
-      800,
-      "getWaitlistedCount"
-    );
-
-    if (error) return logAndFallback("getWaitlistedCount", error, 0);
-    return data ?? 0;
-  } catch (e) {
-    return logAndFallback("getWaitlistedCount", e as { message: string }, 0);
-  }
-}

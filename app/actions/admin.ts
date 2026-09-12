@@ -187,15 +187,16 @@ export async function deleteEventAction(id: string): Promise<void> {
   revalidateEventPaths();
 }
 
-// Manual only, on purpose — there's no cancellation flow for a confirmed
-// registrant to trigger automatic promotion from the waiting list, so when
-// a confirmed group drops, admin moves someone up (or down) by hand here.
-// A direct update, not the register_for_event() RPC — that RPC is the
-// public sign-up path and re-applies the 2-per-day cap logic, which isn't
-// what a manual override should do.
+// Every sign-up lands as 'pending' (see register_for_event() in
+// supabase/migrations/20260913020000_adult_child_optional_phone_food_size.sql)
+// — nothing auto-confirms a spot. This is how admin actually moves someone
+// to confirmed or waitlisted (or back to pending) after reviewing. A
+// direct update, not the register_for_event() RPC — that RPC is the public
+// sign-up path and always inserts as pending, which isn't what a manual
+// decision should do.
 export async function setRegistrationStatusAction(
   id: string,
-  status: "confirmed" | "waitlisted"
+  status: "pending" | "confirmed" | "waitlisted"
 ): Promise<void> {
   await requireAdmin();
   await supabaseAdmin.from("registrations").update({ status }).eq("id", id);

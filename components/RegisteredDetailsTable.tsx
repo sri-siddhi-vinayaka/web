@@ -7,11 +7,13 @@ import type { RegisteredDetail } from "@/lib/events";
 // Starts from `initialDetails` (server-fetched via
 // registered_details(event_id), see
 // supabase/migrations/20260913020000_adult_child_optional_phone_food_size.sql),
-// then listens for the 'registered' broadcast the registrations count
-// trigger also sends, so a new confirmed sign-up shows up live. Name +
-// adult/child counts only, never phone numbers — registrations still has
-// no public SELECT policy. Waitlisted sign-ups never appear here, only
-// confirmed ones (they haven't secured anything yet).
+// then listens for the 'registered' broadcast — sent when admin actually
+// confirms someone (registrations_broadcast_status_change, an AFTER UPDATE
+// trigger; every sign-up starts 'pending', so this fires on admin's manual
+// review, not on the original insert) — so a newly-confirmed registrant
+// shows up live. Name + adult/child counts only, never phone numbers —
+// registrations still has no public SELECT policy. Pending and waitlisted
+// sign-ups never appear here, only confirmed ones.
 export default function RegisteredDetailsTable({
   eventId,
   initialDetails,
