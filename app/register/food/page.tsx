@@ -4,7 +4,7 @@ import DayCalendarStrip from "@/components/DayCalendarStrip";
 import FoodRegistrationForm from "@/components/FoodRegistrationForm";
 import FreeRegistrationNotice from "@/components/FreeRegistrationNotice";
 import PrivacyNotice from "@/components/PrivacyNotice";
-import { dedupeByDay, getEvents, getUpcomingDays } from "@/lib/events";
+import { dedupeByDay, getEvents, getRegistrableDays, getUpcomingDays } from "@/lib/events";
 import { getClaimedDishes } from "@/lib/food";
 
 export const metadata: Metadata = { title: "Food Registration" };
@@ -26,7 +26,7 @@ function formatDate(iso: string): string {
 
 export default async function FoodRegistrationPage() {
   const events = await getEvents();
-  const days = getUpcomingDays(dedupeByDay(events));
+  const days = getUpcomingDays(getRegistrableDays(dedupeByDay(events)));
   const dishesByDay = new Map(
     await Promise.all(days.map(async (day) => [day.id, await getClaimedDishes(day.id)] as const))
   );
