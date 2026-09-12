@@ -76,12 +76,26 @@ export async function deleteGalleryItemAction(id: string): Promise<void> {
   revalidatePath("/gallery");
 }
 
+export type CreateEventState =
+  | { status: "idle" }
+  | { status: "success" }
+  | { status: "error"; message: string };
+
 // The <input type="datetime-local"> this backs gives a plain
 // "YYYY-MM-DDTHH:mm" with no timezone — same simplification FESTIVAL_START/
 // END already make in lib/config.ts: treat it as America/New_York and
 // hardcode the EDT offset. Wrong for events entered after the fall-back to
 // EST, same known limitation noted there.
-export async function createEventAction(formData: FormData): Promise<void> {
+//
+// Takes (prevState, formData) rather than just (formData) — unlike the
+// other admin actions on this page, this one is wired through
+// useActionState (see components/AddEventForm.tsx) so a bad day number, an
+// unparseable date, or an insert failure all surface as a visible message
+// instead of silently doing nothing.
+export async function createEventAction(
+  _prevState: CreateEventState,
+  formData: FormData
+): Promise<CreateEventState> {
   await requireAdmin();
 
   const title = String(formData.get("title") ?? "").trim();
@@ -89,22 +103,35 @@ export async function createEventAction(formData: FormData): Promise<void> {
   const startTimeLocal = String(formData.get("start_time") ?? "");
   const description = String(formData.get("description") ?? "").trim();
 
-  if (!title || !Number.isInteger(dayNumber) || dayNumber < 1 || !startTimeLocal) return;
+  if (!title) return { status: "error", message: "Title is required." };
+  if (!Number.isInteger(dayNumber) || dayNumber < 1) {
+    return { status: "error", message: "Day # must be a whole number of 1 or more." };
+  }
+  if (!startTimeLocal) return { status: "error", message: "Start time is required." };
 
   const startTime = new Date(`${startTimeLocal}:00-04:00`);
-  if (Number.isNaN(startTime.getTime())) return;
+  if (Number.isNaN(startTime.getTime())) {
+    return { status: "error", message: "That start time couldn't be parsed." };
+  }
 
-  await supabaseAdmin.from("events").insert({
+  const { error } = await supabaseAdmin.from("events").insert({
     title,
     day_number: dayNumber,
     start_time: startTime.toISOString(),
     description,
   });
+
+  if (error) {
+    console.warn("[createEventAction]", error.message);
+    return { status: "error", message: `Couldn't save the event: ${error.message}` };
+  }
+
   revalidatePath("/admin");
   revalidatePath("/schedule");
   revalidatePath("/register/pooja");
   revalidatePath("/register/food");
   revalidatePath("/");
+  return { status: "success" };
 }
 
 export async function deleteEventAction(id: string): Promise<void> {
