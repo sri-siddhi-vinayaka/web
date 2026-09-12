@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import DayCalendarStrip from "@/components/DayCalendarStrip";
 import FreeRegistrationNotice from "@/components/FreeRegistrationNotice";
+import PrivacyNotice from "@/components/PrivacyNotice";
 import RegisteredNamesList from "@/components/RegisteredNamesList";
 import RegistrationCount from "@/components/RegistrationCount";
 import RegistrationForm from "@/components/RegistrationForm";
@@ -45,6 +46,14 @@ export default async function PoojaRegistrationPage() {
 
       <div className="mt-4">
         <FreeRegistrationNotice />
+      </div>
+      <div className="mt-2">
+        <PrivacyNotice>
+          Your name is shown here publicly, so others can see who&apos;s
+          already registered for each day. Your phone number stays
+          private — it&apos;s visible only to the event admin, and only to
+          contact you if needed.
+        </PrivacyNotice>
       </div>
 
       {days.length === 0 ? (

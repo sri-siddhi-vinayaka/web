@@ -3,6 +3,7 @@ import ClaimedDishesList from "@/components/ClaimedDishesList";
 import DayCalendarStrip from "@/components/DayCalendarStrip";
 import FoodRegistrationForm from "@/components/FoodRegistrationForm";
 import FreeRegistrationNotice from "@/components/FreeRegistrationNotice";
+import PrivacyNotice from "@/components/PrivacyNotice";
 import { dedupeByDay, getEvents, getUpcomingDays } from "@/lib/events";
 import { getClaimedDishes } from "@/lib/food";
 
@@ -40,6 +41,14 @@ export default async function FoodRegistrationPage() {
 
       <div className="mt-4">
         <FreeRegistrationNotice />
+      </div>
+      <div className="mt-2">
+        <PrivacyNotice>
+          Only the dish name is shown here publicly, so others can avoid
+          bringing the same one. Your name and phone number stay
+          private — visible only to the event admin, and only to contact
+          you if needed.
+        </PrivacyNotice>
       </div>
 
       {days.length === 0 ? (
