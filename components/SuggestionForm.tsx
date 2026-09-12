@@ -1,21 +1,35 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { submitSuggestion, type SuggestionState } from "@/app/actions/suggestions";
 
 const initialState: SuggestionState = { status: "idle" };
 
-export default function SuggestionForm() {
+// Split out so "Have another suggestion?" can remount a fresh instance via
+// `key` (see the default export below) instead of trying to reset
+// useActionState's own state in place — it has no built-in reset, and
+// reconciling it with an effect fights cascading-render lint rules for no
+// real benefit over just starting over cleanly.
+function SuggestionFormFields({ onRestart }: { onRestart: () => void }) {
   const [state, formAction, pending] = useActionState(submitSuggestion, initialState);
 
   if (state.status === "success") {
     return (
-      <p
-        role="status"
-        className="rounded-xl bg-surface-muted p-4 text-sm font-medium text-foreground ring-1 ring-border"
-      >
-        Thank you! Your suggestion has been sent to the committee.
-      </p>
+      <div className="flex flex-col items-start gap-3">
+        <p
+          role="status"
+          className="rounded-xl bg-surface-muted p-4 text-sm font-medium text-foreground ring-1 ring-border"
+        >
+          Thank you! Your suggestion has been sent to the committee.
+        </p>
+        <button
+          type="button"
+          onClick={onRestart}
+          className="text-sm font-medium text-primary underline underline-offset-2"
+        >
+          Have another suggestion?
+        </button>
+      </div>
     );
   }
 
@@ -77,4 +91,9 @@ export default function SuggestionForm() {
       </button>
     </form>
   );
+}
+
+export default function SuggestionForm() {
+  const [instance, setInstance] = useState(0);
+  return <SuggestionFormFields key={instance} onRestart={() => setInstance((n) => n + 1)} />;
 }
