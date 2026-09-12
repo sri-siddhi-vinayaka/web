@@ -142,8 +142,10 @@ These are deliberate product decisions, not gaps to helpfully fill:
 - **User accounts / OTP login / "my registrations".** Excluded from the roadmap
   entirely to keep registration frictionless. If lookup is ever needed, it's a
   query by phone number — not a session.
-- **Payments.** Donations are coordinated off-app via a named contact's phone
-  number. No gateway, no UPI intent, no PCI surface.
+- **Payments / donations.** Removed from the app entirely (no `/donate`
+  page, no contact-info section, no `NAV_LINKS` entry) — donations are
+  coordinated fully outside it. If ever revisited: still off-app by phone
+  only, no gateway, no UPI intent, no PCI surface.
 - **Native app, multi-language.** Out of scope for now. Multi-language was
   explored for `/about-ganesha` (English/Telugu/Hindi/Kannada/Marathi/
   Gujarati/Tamil, page-wide selector so the whole page switches consistently

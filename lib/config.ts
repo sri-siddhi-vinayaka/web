@@ -18,13 +18,6 @@ export const FESTIVAL_END = new Date("2026-09-26T00:00:00-04:00");
 // the live page shows a "not started yet" message rather than a broken embed.
 export const LIVE_STREAM_URL = "";
 
-// TODO(committee): confirm the donation coordinator's name and number.
-// Donations are coordinated off-app by phone — never add a payment gateway.
-export const DONATION_CONTACT = {
-  name: "",
-  phone: "",
-};
-
 export const VENUE_ADDRESS = "2526 Kilpeck Dr, Henrico, VA";
 export const VENUE_MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(VENUE_ADDRESS)}`;
 
@@ -64,6 +57,5 @@ export const NAV_LINKS = [
   { href: "/live", label: "Live Darshan" },
   { href: "/gallery", label: "Gallery" },
   { href: "/announcements", label: "Announcements" },
-  { href: "/donate", label: "Donate" },
   { href: "/contact", label: "Contact" },
 ] as const;
