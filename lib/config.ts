@@ -13,10 +13,10 @@ export const FESTIVAL_START = new Date("2026-09-14T00:00:00-04:00");
 // is the instant Sept 26 begins.
 export const FESTIVAL_END = new Date("2026-09-26T00:00:00-04:00");
 
-// TODO(committee): confirm the live stream platform (YouTube vs Facebook
-// Live) and paste the embeddable URL once it exists. Left empty until then —
-// the live page shows a "not started yet" message rather than a broken embed.
-export const LIVE_STREAM_URL = "";
+// YouTube Live, starting Day 1 (Ganesh Sthapana & Pooja) — converted to the
+// embeddable /embed/<id> form (not the /live/<id> watch-page URL it was
+// given as) since LiveEmbed puts this straight into an <iframe src>.
+export const LIVE_STREAM_URL = "https://www.youtube.com/embed/bizFLsnlvZo";
 
 export const VENUE_ADDRESS = "2526 Kilpeck Dr, Henrico, VA";
 export const VENUE_MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(VENUE_ADDRESS)}`;
