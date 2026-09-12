@@ -12,6 +12,10 @@ export default function LivePage() {
         Watch the celebration live, right here — no separate app or login
         needed.
       </p>
+      <p className="mt-2 text-sm text-muted">
+        Live from Day 1 — Ganesh Sthapana &amp; Pooja, the opening ceremony
+        installing Ganesha&apos;s murti.
+      </p>
       <div className="mt-6">
         <LiveEmbed url={LIVE_STREAM_URL} />
       </div>
