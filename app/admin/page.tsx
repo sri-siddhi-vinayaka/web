@@ -2,12 +2,15 @@ import type { Metadata } from "next";
 import { isAdminRequest } from "@/lib/adminAuth";
 import { isSupabaseAdminConfigured, supabaseAdmin } from "@/lib/supabaseAdmin";
 import { getAnnouncements, getEvents, getGalleryItems } from "@/lib/events";
+import { getCharityMedia } from "@/lib/charity";
+import AddCharityMediaForm from "@/components/AddCharityMediaForm";
 import AddEventForm from "@/components/AddEventForm";
 import EditEventForm from "@/components/EditEventForm";
 import {
   addGalleryItemAction,
   createAnnouncementAction,
   deleteAnnouncementAction,
+  deleteCharityMediaAction,
   deleteEventAction,
   deleteGalleryItemAction,
   deleteRegistrationAction,
@@ -104,12 +107,13 @@ export default async function AdminPage(props: PageProps<"/admin">) {
     );
   }
 
-  const [events, registrations, foodRegistrations, announcements, galleryItems] = await Promise.all([
+  const [events, registrations, foodRegistrations, announcements, galleryItems, charityMedia] = await Promise.all([
     getEvents(),
     getRegistrations(),
     getFoodRegistrations(),
     getAnnouncements(),
     getGalleryItems(),
+    getCharityMedia(),
   ]);
 
   const pendingCount = registrations.filter((registration) => registration.status === "pending").length;
@@ -362,6 +366,47 @@ export default async function AdminPage(props: PageProps<"/admin">) {
               </form>
             </li>
           ))}
+        </ul>
+      </section>
+
+      <section className="mt-8">
+        <h2 className="text-lg font-semibold text-foreground">
+          Charity ({charityMedia.length})
+        </h2>
+        <p className="mt-1 text-sm text-muted">
+          Privately stored — visitors can view these on the Charity page,
+          but there&apos;s no public listing or download link.
+        </p>
+        <AddCharityMediaForm />
+        <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {charityMedia.map((item) => (
+            <li
+              key={item.id}
+              className="flex flex-col gap-1 rounded-xl bg-surface p-2 text-xs ring-1 ring-border"
+            >
+              {item.media_type === "video" ? (
+                <video src={item.url} controls preload="none" className="aspect-square w-full rounded-lg object-cover" />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element -- see app/charity/page.tsx
+                <img
+                  src={item.url}
+                  alt={item.caption ?? ""}
+                  className="aspect-square w-full rounded-lg object-cover"
+                />
+              )}
+              <span className="truncate text-muted">{item.caption ?? "—"}</span>
+              <form action={deleteCharityMediaAction.bind(null, item.id, item.storage_path)}>
+                <button type="submit" className="text-danger underline underline-offset-2">
+                  Delete
+                </button>
+              </form>
+            </li>
+          ))}
+          {charityMedia.length === 0 && (
+            <li className="col-span-full rounded-xl bg-surface p-3 text-center text-sm text-muted ring-1 ring-border">
+              No photos or videos yet.
+            </li>
+          )}
         </ul>
       </section>
     </div>
