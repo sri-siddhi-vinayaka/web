@@ -40,3 +40,7 @@ to service_role;
 -- branch, which is main, not develop — the push trigger doesn't have that
 -- restriction, so a real (if trivial) change under supabase/migrations/**
 -- is the practical way to fire it again.)
+--
+-- (Second comment-only touch, same reason — that fixed run still failed,
+-- this time on connecting to the direct database host from a GitHub
+-- runner; the workflow now routes through Supabase's pooler instead.)

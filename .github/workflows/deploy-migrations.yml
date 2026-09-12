@@ -45,9 +45,26 @@ jobs:
       # sidesteps `link` (and the access token) entirely: it's a direct
       # Postgres connection using only the DB password, which is all
       # `db push` actually needs to apply migrations.
+      #
+      # The direct connection host (db.<ref>.supabase.co) is IPv6-first and
+      # GitHub-hosted runners can't reach it — that attempt failed with
+      # ECONNREFUSED on an IPv6 address. Routing through Supabase's pooler
+      # instead (built for exactly this: CI runners, serverless, anything
+      # without a predictable/IPv4 source) fixes that. Session mode (5432),
+      # not transaction mode (6543) — Supabase recommends session mode
+      # specifically for migrations and other one-off tools, since
+      # transaction-mode pooling doesn't reliably support everything a
+      # schema migration might need. Note the pooler's username is
+      # `postgres.<ref>`, not just `postgres` — that's what lets one shared
+      # pooler host route to the right project's database.
+      #
+      # us-east-1 is this staging project's region (Project Settings ->
+      # General) — hardcoded rather than a variable since there's only one
+      # Supabase project to point at right now; revisit if a differently-
+      # regioned production project is added later.
       - name: Push migrations to staging
         run: |
-          supabase db push --db-url "postgresql://postgres:${SUPABASE_DB_PASSWORD}@db.${SUPABASE_PROJECT_REF}.supabase.co:5432/postgres"
+          supabase db push --db-url "postgresql://postgres.${SUPABASE_PROJECT_REF}:${SUPABASE_DB_PASSWORD}@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
         env:
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_STAGING_DB_PASSWORD }}
           SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
