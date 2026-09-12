@@ -62,9 +62,28 @@ jobs:
       # General) — hardcoded rather than a variable since there's only one
       # Supabase project to point at right now; revisit if a differently-
       # regioned production project is added later.
+      # 20260809032937 through 20260911235445 (0001-0004, before this
+      # renaming/CI automation existed) were applied by hand via the SQL
+      # Editor early in this project's life — the CLI's own migration
+      # history table never recorded that, so a plain `db push` tries to
+      # reapply them from scratch and fails with "relation already exists".
+      # `migration repair --status applied` reconciles that history without
+      # re-running any SQL. Safe to leave permanently: repairing a version
+      # that's already marked applied is a no-op, and every migration from
+      # 20260912000000 onward was always meant to go through this pipeline,
+      # so it needs no repair.
+      - name: Reconcile pre-CI-managed migration history
+        run: |
+          supabase migration repair --status applied \
+            20260809032937 20260911022120 20260911195318 20260911235445 \
+            --db-url "postgresql://postgres.${SUPABASE_PROJECT_REF}:${SUPABASE_DB_PASSWORD}@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_STAGING_DB_PASSWORD }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
+
       - name: Push migrations to staging
         run: |
-          supabase db push --db-url "postgresql://postgres.${SUPABASE_PROJECT_REF}:${SUPABASE_DB_PASSWORD}@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
+          supabase db push --yes --db-url "postgresql://postgres.${SUPABASE_PROJECT_REF}:${SUPABASE_DB_PASSWORD}@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
         env:
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_STAGING_DB_PASSWORD }}
           SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
