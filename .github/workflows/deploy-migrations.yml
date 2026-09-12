@@ -103,9 +103,14 @@ jobs:
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_STAGING_DB_PASSWORD }}
           SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
 
+      # --include-all: 20260912000000 and later already succeeded/got
+      # recorded on a prior run before this pipeline hit later failures: db
+      # push otherwise refuses to insert 20260911235445 (just reverted above
+      # to actually apply it) since its timestamp is now earlier than the
+      # remote's latest applied migration.
       - name: Push migrations to staging
         run: |
-          supabase db push --yes --db-url "postgresql://postgres.${SUPABASE_PROJECT_REF}:${SUPABASE_DB_PASSWORD}@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
+          supabase db push --yes --include-all --db-url "postgresql://postgres.${SUPABASE_PROJECT_REF}:${SUPABASE_DB_PASSWORD}@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
         env:
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_STAGING_DB_PASSWORD }}
           SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
