@@ -1,4 +1,13 @@
 -- 20260913040000_seed_festival_schedule.sql
+--
+-- Content unchanged below — this comment only exists to touch the file so
+-- the deploy-migrations.yml path filter (supabase/migrations/**) fires
+-- again and re-applies this migration now that PR #24 lets CI push an
+-- out-of-order file. Its first attempt failed with "Found local migration
+-- files to be inserted before the last migration on remote database"
+-- because the suggestion box migration (a later timestamp) had already
+-- been applied first.
+--
 -- Seeds the 12-day festival schedule (Sept 14 - Sept 25, matching
 -- FESTIVAL_START/FESTIVAL_END in lib/config.ts) so the schedule and both
 -- registration pages have real data in time for launch, instead of relying
