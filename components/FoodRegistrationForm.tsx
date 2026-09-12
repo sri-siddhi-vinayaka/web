@@ -23,47 +23,55 @@ export default function FoodRegistrationForm({ eventId }: { eventId: string }) {
     <form action={formAction} className="flex flex-col gap-4">
       <input type="hidden" name="event_id" value={eventId} />
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="contact_name" className="text-sm font-medium text-foreground">
-          Contact name
-        </label>
-        <input
-          id="contact_name"
-          name="contact_name"
-          type="text"
-          required
-          autoComplete="name"
-          className="min-h-11 rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
-        />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label htmlFor="phone" className="text-sm font-medium text-foreground">
-          Phone number
-        </label>
-        <input
-          id="phone"
-          name="phone"
-          type="tel"
-          required
-          autoComplete="tel"
-          className="min-h-11 rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
-        />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label htmlFor="dish_name" className="text-sm font-medium text-foreground">
-          Dish you&apos;ll bring
-        </label>
-        <input
-          id="dish_name"
-          name="dish_name"
-          type="text"
-          required
-          placeholder="e.g. Modak, Puliyodarai, Kheer"
-          className="min-h-11 rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
-        />
-      </div>
+      <table className="w-full border-separate border-spacing-y-2 text-left text-sm">
+        <tbody>
+          <tr>
+            <td className="w-2/5 py-1 pr-3 align-middle font-medium text-foreground">
+              <label htmlFor={`${eventId}-contact_name`}>Contact name</label>
+            </td>
+            <td className="py-1">
+              <input
+                id={`${eventId}-contact_name`}
+                name="contact_name"
+                type="text"
+                required
+                autoComplete="name"
+                className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
+              />
+            </td>
+          </tr>
+          <tr>
+            <td className="w-2/5 py-1 pr-3 align-middle font-medium text-foreground">
+              <label htmlFor={`${eventId}-phone`}>Phone number</label>
+            </td>
+            <td className="py-1">
+              <input
+                id={`${eventId}-phone`}
+                name="phone"
+                type="tel"
+                required
+                autoComplete="tel"
+                className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
+              />
+            </td>
+          </tr>
+          <tr>
+            <td className="w-2/5 py-1 pr-3 align-middle font-medium text-foreground">
+              <label htmlFor={`${eventId}-dish_name`}>Dish you&apos;ll bring</label>
+            </td>
+            <td className="py-1">
+              <input
+                id={`${eventId}-dish_name`}
+                name="dish_name"
+                type="text"
+                required
+                placeholder="e.g. Modak, Puliyodarai, Kheer"
+                className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
+              />
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
       <div aria-live="polite">
         {state.status === "error" && (

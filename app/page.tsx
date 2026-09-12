@@ -27,7 +27,7 @@ function formatTime(iso: string): string {
 // visually distinct from the brand mark sitting right on top of it.
 const QUICK_LINKS: { href: string; label: string; Icon: ComponentType<{ className?: string }> }[] = [
   { href: "/about-ganesha", label: "About Ganesha", Icon: ScrollIcon },
-  { href: "/schedule", label: "Pooja Registration", Icon: ClipboardIcon },
+  { href: "/register/pooja", label: "Pooja Registration", Icon: ClipboardIcon },
   { href: "/register/food", label: "Food Registration", Icon: ModakIcon },
 ];
 
@@ -60,14 +60,14 @@ export default async function Home() {
         />
       </section>
 
-      <section className="mx-auto grid w-full max-w-3xl grid-cols-2 gap-3">
+      <section className="mx-auto grid w-full max-w-3xl grid-cols-3 gap-2">
         {QUICK_LINKS.map(({ href, label, Icon }) => (
           <Link
             key={href}
             href={href}
-            className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl bg-surface p-3 text-center shadow-sm ring-1 ring-border transition-colors hover:bg-surface-muted"
+            className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl bg-surface p-2 text-center shadow-sm ring-1 ring-border transition-colors hover:bg-surface-muted"
           >
-            <Icon className="h-7 w-7 text-brand" />
+            <Icon className="h-6 w-6 text-brand" />
             <span className="text-xs font-medium text-foreground">{label}</span>
           </Link>
         ))}

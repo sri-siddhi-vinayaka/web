@@ -75,9 +75,15 @@ policies are the entire security boundary.**
   not a TODO.
 - `events`, `announcements`, `gallery_items`: public `select`, admin-only write.
 - `registrations`, `food_registrations`: public `insert` only. **No public
-  `select`** — reading either would expose every registrant's/volunteer's
-  name and phone number to anyone with the anon key. Read/update/delete are
-  admin-only.
+  `select`** on the table itself — reading either would expose every
+  registrant's/volunteer's phone number to anyone with the anon key.
+  Read/update/delete are admin-only. Two narrow, deliberate exceptions expose
+  one non-PII column each via a SECURITY DEFINER RPC, never a raw select
+  policy: `claimed_dishes(event_id)` (dish names, so people can avoid
+  duplicate dishes) and `registered_names(event_id)` (registrant names,
+  publicly visible by design — "who's secured this day" — but never phone
+  numbers). Follow this same pattern for future public-but-scoped reads;
+  never widen the table's own select policy instead.
 - Migrations are versioned files under `supabase/migrations/` (CLI
   timestamp-prefixed naming). Pushing to `develop` auto-applies new ones to
   staging via `.github/workflows/deploy-migrations.yml` — see
