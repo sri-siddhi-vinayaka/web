@@ -5,7 +5,14 @@ import PrivacyNotice from "@/components/PrivacyNotice";
 import RegisteredDetailsTable from "@/components/RegisteredDetailsTable";
 import RegistrationCount from "@/components/RegistrationCount";
 import RegistrationForm from "@/components/RegistrationForm";
-import { dedupeByDay, getEvents, getRegisteredDetails, getRegistrationCount, getUpcomingDays } from "@/lib/events";
+import {
+  dedupeByDay,
+  getEvents,
+  getRegisteredDetails,
+  getRegistrationCount,
+  getRegistrableDays,
+  getUpcomingDays,
+} from "@/lib/events";
 
 export const metadata: Metadata = { title: "Pooja Registration" };
 
@@ -26,7 +33,7 @@ function formatDate(iso: string): string {
 
 export default async function PoojaRegistrationPage() {
   const events = await getEvents();
-  const days = getUpcomingDays(dedupeByDay(events));
+  const days = getUpcomingDays(getRegistrableDays(dedupeByDay(events)));
   const [detailsByDay, countsByDay] = await Promise.all([
     Promise.all(days.map(async (day) => [day.id, await getRegisteredDetails(day.id)] as const)).then(
       (entries) => new Map(entries)

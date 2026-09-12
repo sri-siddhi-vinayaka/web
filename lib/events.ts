@@ -113,6 +113,21 @@ export function getUpcomingDays(days: EventItem[], now: Date = new Date()): Even
   return days.filter((day) => calendarDateKey(new Date(day.start_time)) >= todayKey);
 }
 
+// The festival's first and last days (Ganesh Sthapana and the final
+// pooja/Ladoo celebration) are run entirely by the admin team — no public
+// sign-up for either. First/last are derived structurally (min/max
+// day_number across every day, not just the upcoming ones) so this stays
+// correct even once day 1 itself is in the past and getUpcomingDays would
+// otherwise have already dropped it from view. Callers should pass the
+// full deduped day list here before narrowing to upcoming days.
+export function getRegistrableDays(days: EventItem[]): EventItem[] {
+  if (days.length === 0) return days;
+  const dayNumbers = days.map((day) => day.day_number);
+  const first = Math.min(...dayNumbers);
+  const last = Math.max(...dayNumbers);
+  return days.filter((day) => day.day_number !== first && day.day_number !== last);
+}
+
 export async function getAnnouncements(): Promise<Announcement[]> {
   if (!isSupabaseConfigured) return [];
 
