@@ -114,13 +114,16 @@ export function getUpcomingDays(days: EventItem[], now: Date = new Date()): Even
 }
 
 // The festival's first and last days (Ganesh Sthapana and the final
-// pooja/Ladoo celebration) are run entirely by the admin team — no public
-// sign-up for either. First/last are derived structurally (min/max
-// day_number across every day, not just the upcoming ones) so this stays
-// correct even once day 1 itself is in the past and getUpcomingDays would
-// otherwise have already dropped it from view. Callers should pass the
-// full deduped day list here before narrowing to upcoming days.
-export function getRegistrableDays(days: EventItem[]): EventItem[] {
+// pooja/Ladoo celebration) have their Pooja itself run entirely by the
+// admin team — no public sign-up for that specific ritual on either day.
+// Food registration has no such restriction (see FoodRegistrationPage,
+// which doesn't call this at all) — both days now take food sign-ups too.
+// First/last are derived structurally (min/max day_number across every
+// day, not just the upcoming ones) so this stays correct even once day 1
+// itself is in the past and getUpcomingDays would otherwise have already
+// dropped it from view. Callers should pass the full deduped day list here
+// before narrowing to upcoming days.
+export function getPoojaRegistrableDays(days: EventItem[]): EventItem[] {
   if (days.length === 0) return days;
   const dayNumbers = days.map((day) => day.day_number);
   const first = Math.min(...dayNumbers);
