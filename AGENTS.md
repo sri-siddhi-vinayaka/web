@@ -60,6 +60,7 @@ Client islands in this app, and nothing more:
 - registration form (form state + submit)
 - live registration count (Supabase Realtime subscription)
 - live darshan embed (iframe wrapper)
+- notification opt-in (service worker registration + Push API)
 
 Everything else — home shell, schedule, contact, announcements, gallery grid —
 stays a Server Component so it prerenders to the CDN and costs no compute.
@@ -94,6 +95,13 @@ policies are the entire security boundary.**
   this same pattern for future public-but-scoped reads or writes; never
   widen the table's own
   select policy instead.
+- `push_subscriptions`: public `insert` only, no public `select` — only
+  `lib/webpush.ts` (service role) reads it, to send notifications. Since
+  `endpoint` is attacker-reachable and later used server-side to make an
+  HTTP request to it, treat any new column read directly into an outbound
+  request the same way: validate against a hardcoded allowlist right
+  before the request, not just at insert time — an unvalidated URL there
+  is SSRF, not just a data-integrity problem.
 - Migrations are versioned files under `supabase/migrations/` (CLI
   timestamp-prefixed naming). Pushing to `develop` auto-applies new ones to
   staging via `.github/workflows/deploy-migrations.yml` — see
