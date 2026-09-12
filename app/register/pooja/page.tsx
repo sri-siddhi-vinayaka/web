@@ -68,25 +68,32 @@ export default async function PoojaRegistrationPage() {
           </div>
 
           <div className="mt-8 flex flex-col gap-8">
-            {days.map((day) => (
-              <section key={day.id} id={`day-${day.day_number}`}>
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-accent">
-                  Day {day.day_number} — {formatDate(day.start_time)}
-                </h2>
-                <RegistrationCount eventId={day.id} initialCount={countsByDay.get(day.id) ?? 0} />
+            {days.map((day) => {
+              const confirmedCount = namesByDay.get(day.id)?.length ?? 0;
+              return (
+                <section key={day.id} id={`day-${day.day_number}`}>
+                  <h2 className="text-sm font-semibold uppercase tracking-wide text-accent">
+                    Day {day.day_number} — {formatDate(day.start_time)}
+                  </h2>
+                  <RegistrationCount eventId={day.id} initialCount={countsByDay.get(day.id) ?? 0} />
+                  <p className="text-xs text-muted">
+                    {confirmedCount} of 2 confirmed spots filled
+                    {confirmedCount >= 2 ? " — new sign-ups join the waiting list" : ""}
+                  </p>
 
-                <div className="mt-3">
-                  <h3 className="text-sm font-medium text-foreground">Already secured by</h3>
-                  <div className="mt-2">
-                    <RegisteredNamesList eventId={day.id} initialNames={namesByDay.get(day.id) ?? []} />
+                  <div className="mt-3">
+                    <h3 className="text-sm font-medium text-foreground">Already secured by</h3>
+                    <div className="mt-2">
+                      <RegisteredNamesList eventId={day.id} initialNames={namesByDay.get(day.id) ?? []} />
+                    </div>
                   </div>
-                </div>
 
-                <div className="mt-4">
-                  <RegistrationForm eventId={day.id} eventTitle={`Day ${day.day_number}`} />
-                </div>
-              </section>
-            ))}
+                  <div className="mt-4">
+                    <RegistrationForm eventId={day.id} eventTitle={`Day ${day.day_number}`} />
+                  </div>
+                </section>
+              );
+            })}
           </div>
         </>
       )}

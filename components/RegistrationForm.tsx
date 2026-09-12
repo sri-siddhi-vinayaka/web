@@ -20,7 +20,16 @@ export default function RegistrationForm({
         role="status"
         className="rounded-xl bg-surface-muted p-4 text-sm font-medium text-foreground ring-1 ring-border"
       >
-        You&apos;re registered for {eventTitle}. See you there!
+        {state.registrationStatus === "confirmed" ? (
+          <>You&apos;re registered for {eventTitle}. See you there!</>
+        ) : (
+          <>
+            Only 2 confirmed spots are guaranteed per day, and {eventTitle}
+            &apos;s are both taken — you&apos;ve been added to the waiting
+            list. Check the other days above for one that still has room, or
+            check back here in case a spot opens up.
+          </>
+        )}
       </p>
     );
   }

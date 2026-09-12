@@ -116,3 +116,26 @@ export async function deleteEventAction(id: string): Promise<void> {
   revalidatePath("/register/food");
   revalidatePath("/");
 }
+
+// Manual only, on purpose — there's no cancellation flow for a confirmed
+// registrant to trigger automatic promotion from the waiting list, so when
+// a confirmed group drops, admin moves someone up (or down) by hand here.
+// A direct update, not the register_for_event() RPC — that RPC is the
+// public sign-up path and re-applies the 2-per-day cap logic, which isn't
+// what a manual override should do.
+export async function setRegistrationStatusAction(
+  id: string,
+  status: "confirmed" | "waitlisted"
+): Promise<void> {
+  await requireAdmin();
+  await supabaseAdmin.from("registrations").update({ status }).eq("id", id);
+  revalidatePath("/admin");
+  revalidatePath("/register/pooja");
+}
+
+export async function deleteRegistrationAction(id: string): Promise<void> {
+  await requireAdmin();
+  await supabaseAdmin.from("registrations").delete().eq("id", id);
+  revalidatePath("/admin");
+  revalidatePath("/register/pooja");
+}

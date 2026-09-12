@@ -9,8 +9,10 @@ import {
   deleteAnnouncementAction,
   deleteEventAction,
   deleteGalleryItemAction,
+  deleteRegistrationAction,
   loginAction,
   logoutAction,
+  setRegistrationStatusAction,
 } from "@/app/actions/admin";
 
 export const metadata: Metadata = {
@@ -31,7 +33,7 @@ async function getRegistrations() {
 
   const { data, error } = await supabaseAdmin
     .from("registrations")
-    .select("id, name, phone, attendee_count, created_at, events(title, start_time)")
+    .select("id, name, phone, attendee_count, status, created_at, events(title, start_time)")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -198,11 +200,14 @@ export default async function AdminPage(props: PageProps<"/admin">) {
                 <th className="px-3 py-2 font-medium">Count</th>
                 <th className="px-3 py-2 font-medium">Date</th>
                 <th className="px-3 py-2 font-medium">Event</th>
+                <th className="px-3 py-2 font-medium">Status</th>
+                <th className="px-3 py-2 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
               {registrations.map((registration) => {
                 const event = (registration.events as { title: string; start_time: string }[] | null)?.[0];
+                const isWaitlisted = registration.status === "waitlisted";
                 return (
                   <tr key={registration.id} className="border-b border-border last:border-0">
                     <td className="px-3 py-2 text-foreground">{registration.name}</td>
@@ -210,12 +215,43 @@ export default async function AdminPage(props: PageProps<"/admin">) {
                     <td className="px-3 py-2 text-muted">{registration.attendee_count}</td>
                     <td className="px-3 py-2 text-muted">{event ? formatDate(event.start_time) : "—"}</td>
                     <td className="px-3 py-2 text-muted">{event?.title ?? "—"}</td>
+                    <td className="px-3 py-2">
+                      <span
+                        className={
+                          isWaitlisted
+                            ? "rounded-full bg-surface-muted px-2 py-0.5 text-xs font-medium text-muted ring-1 ring-border"
+                            : "rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary ring-1 ring-primary/20"
+                        }
+                      >
+                        {isWaitlisted ? "Waitlisted" : "Confirmed"}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex flex-wrap gap-2">
+                        <form
+                          action={setRegistrationStatusAction.bind(
+                            null,
+                            registration.id,
+                            isWaitlisted ? "confirmed" : "waitlisted"
+                          )}
+                        >
+                          <button type="submit" className="text-primary underline underline-offset-2">
+                            {isWaitlisted ? "Confirm" : "Waitlist"}
+                          </button>
+                        </form>
+                        <form action={deleteRegistrationAction.bind(null, registration.id)}>
+                          <button type="submit" className="text-danger underline underline-offset-2">
+                            Delete
+                          </button>
+                        </form>
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
               {registrations.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-3 py-4 text-center text-muted">
+                  <td colSpan={7} className="px-3 py-4 text-center text-muted">
                     No registrations yet.
                   </td>
                 </tr>
