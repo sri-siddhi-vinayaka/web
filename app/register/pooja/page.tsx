@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import DayCalendarStrip from "@/components/DayCalendarStrip";
 import FreeRegistrationNotice from "@/components/FreeRegistrationNotice";
 import PrivacyNotice from "@/components/PrivacyNotice";
@@ -93,6 +94,13 @@ export default async function PoojaRegistrationPage() {
                 <div className="mt-4">
                   <RegistrationForm eventId={day.id} eventTitle={`Day ${day.day_number}`} />
                 </div>
+
+                <Link
+                  href={`/register/food#day-${day.day_number}`}
+                  className="mt-4 inline-block text-sm font-medium text-primary underline underline-offset-2"
+                >
+                  Bringing food too? Switch to Food Registration for this day →
+                </Link>
               </section>
             ))}
           </div>

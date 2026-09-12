@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import ClaimedDishesList from "@/components/ClaimedDishesList";
 import DayCalendarStrip from "@/components/DayCalendarStrip";
 import FoodRegistrationForm from "@/components/FoodRegistrationForm";
 import FreeRegistrationNotice from "@/components/FreeRegistrationNotice";
 import PrivacyNotice from "@/components/PrivacyNotice";
-import { dedupeByDay, getEvents, getUpcomingDays } from "@/lib/events";
+import { dedupeByDay, getEvents, getPoojaRegistrableDays, getUpcomingDays } from "@/lib/events";
 import { getClaimedDishes } from "@/lib/food";
 
 export const metadata: Metadata = { title: "Food Registration" };
@@ -26,10 +27,16 @@ function formatDate(iso: string): string {
 
 export default async function FoodRegistrationPage() {
   const events = await getEvents();
+  const dedupedDays = dedupeByDay(events);
   // Unlike Pooja registration, Food registration has no first/last-day
   // exclusion — every day, including the opening and closing ceremonies,
-  // can take a food sign-up.
-  const days = getUpcomingDays(dedupeByDay(events));
+  // can take a food sign-up. Still need to know which days *do* have Pooja
+  // registration open, to decide whether the cross-link below makes sense
+  // for a given day.
+  const days = getUpcomingDays(dedupedDays);
+  const poojaRegistrableDayNumbers = new Set(
+    getPoojaRegistrableDays(dedupedDays).map((day) => day.day_number)
+  );
   const dishesByDay = new Map(
     await Promise.all(days.map(async (day) => [day.id, await getClaimedDishes(day.id)] as const))
   );
@@ -81,6 +88,15 @@ export default async function FoodRegistrationPage() {
                 <div className="mt-4">
                   <FoodRegistrationForm eventId={day.id} />
                 </div>
+
+                {poojaRegistrableDayNumbers.has(day.day_number) && (
+                  <Link
+                    href={`/register/pooja#day-${day.day_number}`}
+                    className="mt-4 inline-block text-sm font-medium text-primary underline underline-offset-2"
+                  >
+                    Want to attend Pooja too? Switch to Pooja Registration for this day →
+                  </Link>
+                )}
               </section>
             ))}
           </div>
