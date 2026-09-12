@@ -15,9 +15,11 @@ migration to production manually via its SQL Editor when promoting a
 `develop → main` release, the same way this repo did before automation
 existed.
 
-If the Action isn't set up yet (e.g. a fresh clone before repo secrets are
-configured), fall back to pasting each unapplied file into the Supabase SQL
-Editor by hand, in filename order.
+Requires a `staging` GitHub Environment (Settings → Environments) holding
+`SUPABASE_ACCESS_TOKEN` + `SUPABASE_STAGING_DB_PASSWORD` as secrets and
+`SUPABASE_STAGING_PROJECT_REF` as a variable — see the workflow file's
+comment. If that isn't set up yet, fall back to pasting each unapplied file
+into the Supabase SQL Editor by hand, in filename order.
 
 ## Conventions
 

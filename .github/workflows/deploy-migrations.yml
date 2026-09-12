@@ -5,12 +5,18 @@ name: Deploy database migrations
 # rather than a hand-rolled psql script — one less thing this volunteer
 # project has to maintain itself.
 #
+# The "staging" GitHub Environment (Settings -> Environments) holds
+# SUPABASE_ACCESS_TOKEN + SUPABASE_STAGING_DB_PASSWORD as secrets and
+# SUPABASE_STAGING_PROJECT_REF as a variable, restricted to deploy only from
+# the develop branch — an extra guarantee on top of this workflow's own
+# `on: push: branches: [develop]`.
+#
 # Only wired up for staging so far, matching the one Supabase project that
 # currently exists. To extend this to production once that project exists:
-# duplicate the "push" job below, gate it on
-# `github.ref == 'refs/heads/main'`, and add
-# SUPABASE_PRODUCTION_DB_PASSWORD (secret) + SUPABASE_PRODUCTION_PROJECT_REF
-# (variable).
+# duplicate the "push" job below pointed at a new "production" Environment
+# (with its own SUPABASE_PRODUCTION_DB_PASSWORD secret and
+# SUPABASE_PRODUCTION_PROJECT_REF variable, deploy-restricted to main), gated
+# on `github.ref == 'refs/heads/main'`.
 on:
   push:
     branches: [develop]
@@ -21,6 +27,7 @@ on:
 jobs:
   push:
     runs-on: ubuntu-latest
+    environment: staging
     steps:
       - uses: actions/checkout@v4
 
