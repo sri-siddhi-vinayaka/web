@@ -78,12 +78,20 @@ export default async function SchedulePage() {
                         initialCount={counts.get(event.id) ?? 0}
                       />
                     </div>
-                    <Link
-                      href={`/register/${event.id}`}
-                      className="shrink-0 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-contrast transition-colors hover:opacity-90"
-                    >
-                      Register
-                    </Link>
+                    <div className="flex shrink-0 flex-col gap-2">
+                      <Link
+                        href={`/register/pooja#day-${event.day_number}`}
+                        className="min-h-11 rounded-lg bg-primary px-3 py-2 text-center text-sm font-medium text-primary-contrast transition-colors hover:opacity-90"
+                      >
+                        Pooja Registration
+                      </Link>
+                      <Link
+                        href={`/register/food#day-${event.day_number}`}
+                        className="min-h-11 rounded-lg bg-surface-muted px-3 py-2 text-center text-sm font-medium text-foreground ring-1 ring-border transition-colors hover:bg-border"
+                      >
+                        Food Registration
+                      </Link>
+                    </div>
                   </div>
                 </li>
               ))}
