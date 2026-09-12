@@ -26,43 +26,79 @@ export type CharityMediaItem = {
   storage_path: string;
 };
 
+// Same fail-soft posture as lib/events.ts: a Supabase hiccup should degrade
+// this to an empty grid, never a 500 — see that file's comments for why
+// (console.warn not .error, and the withTimeout below guards against a
+// placeholder/unreachable Supabase URL hanging indefinitely rather than
+// erroring quickly).
 function logAndFallback<T>(context: string, error: { message: string }, fallback: T): T {
   console.warn(`[lib/charity] ${context}:`, error.message);
   return fallback;
 }
 
+function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number = 800,
+  context: string = "query"
+): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${context} timed out after ${ms}ms`)), ms)
+    ),
+  ]);
+}
+
 export async function getCharityMedia(): Promise<CharityMediaItem[]> {
   if (!isSupabaseAdminConfigured) return [];
 
-  const { data, error } = await supabaseAdmin
-    .from("charity_media")
-    .select("id, storage_path, media_type, caption")
-    .order("created_at", { ascending: false });
+  try {
+    const { data, error } = await withTimeout(
+      supabaseAdmin
+        .from("charity_media")
+        .select("id, storage_path, media_type, caption")
+        .order("created_at", { ascending: false }) as unknown as Promise<{
+        data: { id: string; storage_path: string; media_type: string; caption: string | null }[] | null;
+        error: { message: string } | null;
+      }>,
+      800,
+      "getCharityMedia"
+    );
 
-  if (error || !data) {
-    return logAndFallback("getCharityMedia", error ?? { message: "no data" }, []);
+    if (error || !data) {
+      return logAndFallback("getCharityMedia", error ?? { message: "no data" }, []);
+    }
+
+    const items = await Promise.all(
+      data.map(async (row): Promise<CharityMediaItem | null> => {
+        try {
+          const { data: signed, error: signError } = await withTimeout(
+            supabaseAdmin.storage.from(CHARITY_BUCKET).createSignedUrl(row.storage_path, SIGNED_URL_TTL_SECONDS),
+            800,
+            `sign ${row.storage_path}`
+          );
+
+          if (signError || !signed) {
+            console.warn(`[lib/charity] signing ${row.storage_path}:`, signError?.message);
+            return null;
+          }
+
+          return {
+            id: row.id,
+            url: signed.signedUrl,
+            media_type: row.media_type as "image" | "video",
+            caption: row.caption,
+            storage_path: row.storage_path,
+          };
+        } catch (e) {
+          console.warn(`[lib/charity] signing ${row.storage_path}:`, (e as { message: string }).message);
+          return null;
+        }
+      })
+    );
+
+    return items.filter((item): item is CharityMediaItem => item !== null);
+  } catch (e) {
+    return logAndFallback("getCharityMedia", e as { message: string }, []);
   }
-
-  const items = await Promise.all(
-    data.map(async (row): Promise<CharityMediaItem | null> => {
-      const { data: signed, error: signError } = await supabaseAdmin.storage
-        .from(CHARITY_BUCKET)
-        .createSignedUrl(row.storage_path, SIGNED_URL_TTL_SECONDS);
-
-      if (signError || !signed) {
-        console.warn(`[lib/charity] signing ${row.storage_path}:`, signError?.message);
-        return null;
-      }
-
-      return {
-        id: row.id,
-        url: signed.signedUrl,
-        media_type: row.media_type as "image" | "video",
-        caption: row.caption,
-        storage_path: row.storage_path,
-      };
-    })
-  );
-
-  return items.filter((item): item is CharityMediaItem => item !== null);
 }
