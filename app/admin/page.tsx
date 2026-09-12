@@ -11,6 +11,7 @@ import {
   deleteEventAction,
   deleteGalleryItemAction,
   deleteRegistrationAction,
+  deleteSuggestionAction,
   loginAction,
   logoutAction,
   setRegistrationStatusAction,
@@ -71,6 +72,21 @@ async function getFoodRegistrations() {
   return data ?? [];
 }
 
+async function getSuggestions() {
+  if (!isSupabaseAdminConfigured) return [];
+
+  const { data, error } = await supabaseAdmin
+    .from("suggestions")
+    .select("id, message, name, contact, created_at")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.warn("[admin] getSuggestions:", error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
 export default async function AdminPage(props: PageProps<"/admin">) {
   const searchParams = await props.searchParams;
   const isAdmin = await isAdminRequest();
@@ -104,10 +120,11 @@ export default async function AdminPage(props: PageProps<"/admin">) {
     );
   }
 
-  const [events, registrations, foodRegistrations, announcements, galleryItems] = await Promise.all([
+  const [events, registrations, foodRegistrations, suggestions, announcements, galleryItems] = await Promise.all([
     getEvents(),
     getRegistrations(),
     getFoodRegistrations(),
+    getSuggestions(),
     getAnnouncements(),
     getGalleryItems(),
   ]);
@@ -275,6 +292,39 @@ export default async function AdminPage(props: PageProps<"/admin">) {
             </tbody>
           </table>
         </div>
+      </section>
+
+      <section className="mt-8">
+        <h2 className="text-lg font-semibold text-foreground">
+          Suggestions ({suggestions.length})
+        </h2>
+        <ul className="mt-3 flex flex-col gap-2">
+          {suggestions.map((suggestion) => (
+            <li
+              key={suggestion.id}
+              className="flex items-start justify-between gap-3 rounded-xl bg-surface p-3 text-sm ring-1 ring-border"
+            >
+              <div>
+                <p className="text-foreground">{suggestion.message}</p>
+                <p className="mt-1 text-xs text-muted">
+                  {[suggestion.name, suggestion.contact].filter(Boolean).join(" · ") || "Anonymous"}
+                  {" — "}
+                  {formatDate(suggestion.created_at)}
+                </p>
+              </div>
+              <form action={deleteSuggestionAction.bind(null, suggestion.id)}>
+                <button type="submit" className="shrink-0 text-danger underline underline-offset-2">
+                  Delete
+                </button>
+              </form>
+            </li>
+          ))}
+          {suggestions.length === 0 && (
+            <li className="rounded-xl bg-surface p-3 text-center text-sm text-muted ring-1 ring-border">
+              No suggestions yet.
+            </li>
+          )}
+        </ul>
       </section>
 
       <section className="mt-8">

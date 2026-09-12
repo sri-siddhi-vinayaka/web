@@ -220,3 +220,9 @@ export async function deleteRegistrationAction(id: string): Promise<void> {
   revalidatePath("/admin");
   revalidatePath("/register/pooja");
 }
+
+export async function deleteSuggestionAction(id: string): Promise<void> {
+  await requireAdmin();
+  await supabaseAdmin.from("suggestions").delete().eq("id", id);
+  revalidatePath("/admin");
+}
