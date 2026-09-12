@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import RegistrationCount from "@/components/RegistrationCount";
 import { getEvents, getRegistrationCount } from "@/lib/events";
+import { FESTIVAL_END, FESTIVAL_START } from "@/lib/config";
 import type { EventItem } from "@/types";
 
 export const metadata: Metadata = { title: "Schedule" };
@@ -18,6 +19,29 @@ function formatTime(iso: string): string {
     minute: "2-digit",
   });
 }
+
+function formatDay(date: Date): string {
+  return date.toLocaleDateString("en-US", {
+    timeZone: "America/New_York",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+// The schedule spans 12 calendar days (Sept 14 - Sept 25), which reads as
+// 11 *nights* — the traditional way this festival's length is counted (an
+// odd number of days the murti stays installed). Both are correct at once,
+// but only showing "Day 1" through "Day 12" below could read as "12 days"
+// to a visitor unfamiliar with that convention, so this spells out the
+// night count explicitly rather than just the day range alone. Derived
+// from FESTIVAL_START/END (lib/config.ts), not hardcoded, so this can't
+// drift from the schedule below if those dates ever change. FESTIVAL_END
+// is an exclusive upper bound (see its comment) — day count is the span in
+// days, night count is one less.
+const FESTIVAL_LAST_DAY = new Date(FESTIVAL_END.getTime() - 24 * 60 * 60 * 1000);
+const FESTIVAL_DAY_COUNT = Math.round((FESTIVAL_END.getTime() - FESTIVAL_START.getTime()) / 86_400_000);
+const FESTIVAL_NIGHT_COUNT = FESTIVAL_DAY_COUNT - 1;
+const FESTIVAL_DATE_RANGE = `${formatDay(FESTIVAL_START)} – ${formatDay(FESTIVAL_LAST_DAY)} · ${FESTIVAL_NIGHT_COUNT} nights of celebration`;
 
 function groupByDay(events: EventItem[]): Map<number, EventItem[]> {
   const days = new Map<number, EventItem[]>();
@@ -36,6 +60,7 @@ export default async function SchedulePage() {
     return (
       <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
         <h1 className="text-2xl font-bold text-brand">Festival Schedule</h1>
+        <p className="mt-1 text-sm text-muted">{FESTIVAL_DATE_RANGE}</p>
         <p className="mt-3 text-muted">
           The day-by-day pooja schedule is being finalized and will appear here
           before the festival begins.
@@ -57,6 +82,7 @@ export default async function SchedulePage() {
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
       <h1 className="text-2xl font-bold text-brand">Festival Schedule</h1>
+      <p className="mt-1 text-sm text-muted">{FESTIVAL_DATE_RANGE}</p>
       <div className="mt-6 flex flex-col gap-8">
         {[...days.entries()].map(([dayNumber, dayEvents]) => (
           <section key={dayNumber}>
