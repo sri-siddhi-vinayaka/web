@@ -6,10 +6,12 @@ name: Deploy database migrations
 # project has to maintain itself.
 #
 # The "staging" GitHub Environment (Settings -> Environments) holds
-# SUPABASE_ACCESS_TOKEN + SUPABASE_STAGING_DB_PASSWORD as secrets and
-# SUPABASE_STAGING_PROJECT_REF as a variable, restricted to deploy only from
-# the develop branch — an extra guarantee on top of this workflow's own
-# `on: push: branches: [develop]`.
+# SUPABASE_STAGING_DB_PASSWORD as a secret and SUPABASE_STAGING_PROJECT_REF
+# as a variable, restricted to deploy only from the develop branch — an
+# extra guarantee on top of this workflow's own `on: push: branches:
+# [develop]`. SUPABASE_ACCESS_TOKEN also lives there but is unused by this
+# workflow now (see the --db-url comment below) — left in place in case a
+# future step needs the Management API.
 #
 # Only wired up for staging so far, matching the one Supabase project that
 # currently exists. To extend this to production once that project exists:
@@ -35,11 +37,17 @@ jobs:
         with:
           version: latest
 
+      # `supabase link` calls a broader Management API surface than this
+      # workflow's deliberately narrow-scoped access token (or possibly the
+      # project's plan) allows — it failed with "Your account does not have
+      # the necessary privileges to access this endpoint" even though the
+      # token has exactly what Migrations/db push itself needs. `--db-url`
+      # sidesteps `link` (and the access token) entirely: it's a direct
+      # Postgres connection using only the DB password, which is all
+      # `db push` actually needs to apply migrations.
       - name: Push migrations to staging
         run: |
-          supabase link --project-ref "$SUPABASE_PROJECT_REF"
-          supabase db push
+          supabase db push --db-url "postgresql://postgres:${SUPABASE_DB_PASSWORD}@db.${SUPABASE_PROJECT_REF}.supabase.co:5432/postgres"
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_STAGING_DB_PASSWORD }}
           SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
