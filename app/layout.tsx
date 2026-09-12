@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Yatra_One } from "next/font/google";
 import SiteHeader from "@/components/SiteHeader";
 import { SITE_NAME } from "@/lib/config";
@@ -29,6 +29,19 @@ export const metadata: Metadata = {
   },
   description:
     "Schedule, pooja registration, live darshan, and updates for the Sri Siddhi Vinayaka Youth Association's Ganesh Chaturthi celebration.",
+  // iOS ignores the PWA manifest (app/manifest.ts) for "Add to Home Screen"
+  // and looks for these instead — without them, Safari falls back to a
+  // screenshot of the page as the "icon" rather than app/apple-icon.tsx.
+  appleWebApp: {
+    title: SITE_NAME,
+    statusBarStyle: "black-translucent",
+  },
+};
+
+// themeColor lives here, not in `metadata` above — deprecated there since
+// Next.js 14 in favor of this separate export.
+export const viewport: Viewport = {
+  themeColor: "#6e1b33",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
