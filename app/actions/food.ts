@@ -10,7 +10,7 @@ export type FoodRegisterState =
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // No pre-check for an already-claimed dish before inserting — food_registrations
-// has no public SELECT policy (see infra/migrations/0003_food_registrations.sql),
+// has no public SELECT policy (see supabase/migrations/20260911195318_food_registrations.sql),
 // and two people bringing the same dish is a social coordination problem, not
 // a data-integrity one. The claimed-dishes list on the page is there so people
 // can self-select something different before they submit.

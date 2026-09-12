@@ -21,7 +21,7 @@ function withTimeout<T>(
 }
 
 // Goes through the claimed_dishes(event_id) RPC (see
-// infra/migrations/0004_registration_refinements.sql) rather than
+// supabase/migrations/20260911235445_registration_refinements.sql) rather than
 // `select dish_name from food_registrations` — there is no public SELECT
 // policy on food_registrations (it holds the contact's name and phone
 // number), so a direct query would be blocked by RLS. The RPC is a SECURITY

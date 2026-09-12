@@ -134,7 +134,7 @@ export async function getGalleryItems(): Promise<GalleryItem[]> {
 }
 
 // Deliberately goes through the `registration_count` RPC (see
-// infra/migrations/0002_registration_count_broadcast.sql) rather than
+// supabase/migrations/20260911022120_registration_count_broadcast.sql) rather than
 // `select count(*) from registrations` — there is no public SELECT policy on
 // registrations (it holds every registrant's name and phone number), so a
 // direct count query would be blocked by RLS. The RPC is a SECURITY DEFINER

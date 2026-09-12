@@ -74,10 +74,15 @@ policies are the entire security boundary.**
   its policies **in the same migration**. A table without RLS is a data breach,
   not a TODO.
 - `events`, `announcements`, `gallery_items`: public `select`, admin-only write.
-- `registrations`: public `insert` only. **No public `select`** — reading it
-  would expose every registrant's name and phone number to anyone with the
-  anon key. Read/update/delete are admin-only.
-- Migrations are versioned files under `infra/`. Apply to staging first.
+- `registrations`, `food_registrations`: public `insert` only. **No public
+  `select`** — reading either would expose every registrant's/volunteer's
+  name and phone number to anyone with the anon key. Read/update/delete are
+  admin-only.
+- Migrations are versioned files under `supabase/migrations/` (CLI
+  timestamp-prefixed naming). Pushing to `develop` auto-applies new ones to
+  staging via `.github/workflows/deploy-migrations.yml` — see
+  `supabase/README.md`. Production isn't wired up yet; apply manually via
+  its SQL Editor when promoting a release until it is.
 
 Admin auth for MVP is a single shared password gating `/admin`. Treat it as
 what it is: a speed bump, not authentication. Never put anything behind it that

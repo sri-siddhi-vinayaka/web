@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 // Fetches claimed_dishes(event_id) client-side (see
-// infra/migrations/0004_registration_refinements.sql) rather than via a
+// supabase/migrations/20260911235445_registration_refinements.sql) rather than via a
 // server-fetched initial prop — which day is selected lives in the parent
 // client component's state, so there's no server-rendered value to seed
 // from. From there it listens for Realtime Broadcast messages pushed by the
