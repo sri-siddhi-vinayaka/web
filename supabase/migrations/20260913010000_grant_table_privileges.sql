@@ -44,3 +44,8 @@ to service_role;
 -- (Second comment-only touch, same reason — that fixed run still failed,
 -- this time on connecting to the direct database host from a GitHub
 -- runner; the workflow now routes through Supabase's pooler instead.)
+--
+-- (Third comment-only touch, same reason again — that run connected fine
+-- but then tried to reapply 0001-0004, which were already applied by hand
+-- before this pipeline existed; the workflow now repairs that history
+-- first.)
