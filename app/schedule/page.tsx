@@ -108,29 +108,30 @@ export default async function SchedulePage() {
               ))}
             </ul>
 
-            {/* One registration link pair per day, not per event — a day
-                can carry more than one event (the pooja itself, plus e.g. a
+            {/* One registration link set per day, not per event — a day can
+                carry more than one event (the pooja itself, plus e.g. a
                 fun-event entry), and every event here shares the same
-                day-level registration flow. Days 1 and 12 (Sthapana and the
-                final pooja/Ladoo celebration) are admin-run with no public
-                sign-up, so neither link is shown for the structurally first
-                or last day. */}
-            {dayNumber !== firstDay && dayNumber !== lastDay && (
-              <div className="mt-3 flex gap-2">
+                day-level registration flow. The Pooja ritual on days 1 and
+                12 (Sthapana and the final pooja/Ladoo celebration) is
+                admin-run with no public sign-up, so that link alone is
+                skipped for the structurally first/last day — Food
+                registration has no such restriction and shows every day. */}
+            <div className="mt-3 flex gap-2">
+              {dayNumber !== firstDay && dayNumber !== lastDay && (
                 <Link
                   href={`/register/pooja#day-${dayNumber}`}
                   className="min-h-11 flex-1 rounded-lg bg-primary px-3 py-2 text-center text-sm font-medium text-primary-contrast transition-colors hover:opacity-90"
                 >
                   Pooja Registration
                 </Link>
-                <Link
-                  href={`/register/food#day-${dayNumber}`}
-                  className="min-h-11 flex-1 rounded-lg bg-surface-muted px-3 py-2 text-center text-sm font-medium text-foreground ring-1 ring-border transition-colors hover:bg-border"
-                >
-                  Food Registration
-                </Link>
-              </div>
-            )}
+              )}
+              <Link
+                href={`/register/food#day-${dayNumber}`}
+                className="min-h-11 flex-1 rounded-lg bg-surface-muted px-3 py-2 text-center text-sm font-medium text-foreground ring-1 ring-border transition-colors hover:bg-border"
+              >
+                Food Registration
+              </Link>
+            </div>
           </section>
         ))}
       </div>

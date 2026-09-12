@@ -10,7 +10,7 @@ import {
   getEvents,
   getRegisteredDetails,
   getRegistrationCount,
-  getRegistrableDays,
+  getPoojaRegistrableDays,
   getUpcomingDays,
 } from "@/lib/events";
 
@@ -33,7 +33,7 @@ function formatDate(iso: string): string {
 
 export default async function PoojaRegistrationPage() {
   const events = await getEvents();
-  const days = getUpcomingDays(getRegistrableDays(dedupeByDay(events)));
+  const days = getUpcomingDays(getPoojaRegistrableDays(dedupeByDay(events)));
   const [detailsByDay, countsByDay] = await Promise.all([
     Promise.all(days.map(async (day) => [day.id, await getRegisteredDetails(day.id)] as const)).then(
       (entries) => new Map(entries)

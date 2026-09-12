@@ -4,8 +4,7 @@ import CountdownTimer from "@/components/CountdownTimer";
 import GaneshaPhoto from "@/components/GaneshaPhoto";
 import NotificationOptIn from "@/components/NotificationOptIn";
 import ScrollIcon from "@/components/icons/ScrollIcon";
-import ClipboardIcon from "@/components/icons/ClipboardIcon";
-import ModakIcon from "@/components/icons/ModakIcon";
+import CalendarIcon from "@/components/icons/CalendarIcon";
 import { getEvents, getTodayHighlights } from "@/lib/events";
 import { FESTIVAL_END, FESTIVAL_START, VENUE_MAPS_URL } from "@/lib/config";
 
@@ -38,10 +37,14 @@ const FESTIVAL_LAST_DAY = new Date(FESTIVAL_END.getTime() - 24 * 60 * 60 * 1000)
 // revisit later. 32 forms + mantras still live on /about-ganesha. ScrollIcon
 // (not VinayakaIcon, already the header logo just above) keeps this tile
 // visually distinct from the brand mark sitting right on top of it.
+//
+// One "Schedule" tile, not separate Pooja/Food Registration tiles — the
+// schedule page is where visitors pick a day and register for either from
+// there (see app/schedule/page.tsx), so this only needs to get them to
+// that one entry point.
 const QUICK_LINKS: { href: string; label: string; Icon: ComponentType<{ className?: string }> }[] = [
   { href: "/about-ganesha", label: "About Ganesha", Icon: ScrollIcon },
-  { href: "/register/pooja", label: "Pooja Registration", Icon: ClipboardIcon },
-  { href: "/register/food", label: "Food Registration", Icon: ModakIcon },
+  { href: "/schedule", label: "Schedule", Icon: CalendarIcon },
 ];
 
 export default async function Home() {
@@ -73,7 +76,7 @@ export default async function Home() {
         />
       </section>
 
-      <section className="mx-auto grid w-full max-w-3xl grid-cols-3 gap-2">
+      <section className="mx-auto grid w-full max-w-sm grid-cols-2 gap-2">
         {QUICK_LINKS.map(({ href, label, Icon }) => (
           <Link
             key={href}
@@ -92,12 +95,7 @@ export default async function Home() {
         </h2>
         {highlights.length === 0 ? (
           <p className="mt-2 text-sm text-muted">
-            The full day-by-day schedule is being finalized — check back here or
-            the{" "}
-            <Link href="/schedule" className="font-medium text-primary underline underline-offset-2">
-              schedule page
-            </Link>{" "}
-            soon.
+            The full day-by-day schedule is being finalized — check back soon.
           </p>
         ) : (
           <ul className="mt-3 flex flex-col gap-2">
