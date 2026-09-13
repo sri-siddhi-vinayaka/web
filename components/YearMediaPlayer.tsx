@@ -17,10 +17,12 @@ declare global {
 
 let instagramScriptPromise: Promise<void> | null = null;
 
-// Instagram only plays inline through their own embed.js + <blockquote>
-// handshake (see lib/config.ts's comment on PREVIOUS_YEARS for why the
-// simpler <iframe> approach doesn't work) — loaded on first tap, not on
-// page load, so visitors who never tap the Instagram tile never pay for it.
+// Renders Instagram's real preview card in place, via their own embed.js +
+// <blockquote> handshake (see lib/config.ts's comment on PREVIOUS_YEARS for
+// why the simpler <iframe> approach doesn't work, and why tapping the card
+// itself still opens Instagram in a new tab — that's Instagram's, not
+// ours). Loaded on first tap, not on page load, so visitors who never tap
+// the Instagram tile never pay for it.
 function loadInstagramEmbedScript(): Promise<void> {
   if (typeof window === "undefined") return Promise.resolve();
   if (window.instgrm) return Promise.resolve();
@@ -104,9 +106,12 @@ export default function YearMediaPlayer({
 
       {active === "instagram" && instagramUrl && (
         <div className="mx-auto mt-3 w-full max-w-[400px]">
-          {/* embed.js (loaded above) replaces this blockquote with its own
-              properly-negotiated iframe once it processes the page — that's
-              why there's no src here, unlike the YouTube iframe above. */}
+          {/* embed.js (loaded above) replaces this blockquote with
+              Instagram's real preview card once it processes the page —
+              that's why there's no src here, unlike the YouTube iframe
+              above. The card links out to Instagram on tap (opens in a new
+              tab, this page stays open) — Instagram doesn't offer an
+              anonymous inline player to embed instead. */}
           <blockquote
             className="instagram-media"
             data-instgrm-permalink={instagramUrl}

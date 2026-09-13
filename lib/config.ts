@@ -22,20 +22,24 @@ export const VENUE_ADDRESS = "2526 Kilpeck Dr, Henrico, VA";
 export const VENUE_MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(VENUE_ADDRESS)}`;
 
 // Highlights from past celebrations, shown on the Gallery page grouped by
-// year alongside the admin-managed photo grid, embedded inline rather than
-// scraped or linked out. Two different embed mechanisms, not one:
-// YouTube's plain <iframe src=".../embed/<id>"> costs nothing extra (its
-// own weight loads in its own cross-origin browsing context, not our JS
-// bundle) — but Instagram's equivalent plain-iframe endpoint turned out to
-// break out to instagram.com the moment its play button is tapped, so
-// Instagram instead goes through their official embed.js + <blockquote>
-// handshake (the one avenue that actually plays inline), loaded lazily by
-// components/YearMediaPlayer.tsx only the first time someone taps an
-// Instagram tile — never on page load, so it isn't the heavy-client-bundle
-// cost this app otherwise avoids, just a deferred one paid by whoever
-// actually wants to watch. Nothing auto-plays either way; every tile here
-// is click-to-play so five years of embeds are never all live at once on
-// the venue's slow mobile data.
+// year alongside the admin-managed photo grid. YouTube and Instagram are
+// genuinely different here, not just two branches of the same idea:
+// YouTube's plain <iframe src=".../embed/<id>"> is a true inline player
+// that costs nothing extra (its own weight loads in its own cross-origin
+// browsing context, not our JS bundle). Instagram has no public equivalent
+// — their oEmbed response (checked directly against the Graph API) is a
+// static preview card with the *entire* card wrapped in one
+// <a target="_blank">; there's no anonymous inline player to embed, by
+// Instagram's own design, not a bug on our end. So Instagram gets their
+// official embed.js + <blockquote> handshake instead — a real, on-site
+// preview card rather than the raw iframe's outright redirect-on-tap — but
+// tapping it still opens Instagram in a new tab; that's the ceiling for a
+// free, public embed. Loaded lazily by components/YearMediaPlayer.tsx only
+// the first time someone taps an Instagram tile, never on page load, so it
+// isn't the heavy-client-bundle cost this app otherwise avoids, just a
+// deferred one paid by whoever actually wants to look. Nothing auto-plays
+// either way; every tile here is click-to-play so five years of embeds are
+// never all live at once on the venue's slow mobile data.
 //
 // Newest year first. instagramUrl is optional for exactly one reason: the
 // current festival's own entry (added below) only has its YouTube recording
