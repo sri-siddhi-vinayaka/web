@@ -79,11 +79,20 @@ export const PREVIOUS_YEARS: {
 ];
 
 // Memories from the association's cricket tournaments, newest year first
-// (manually ordered, same convention as PREVIOUS_YEARS above). Plain links
-// rather than embeds, even for the YouTube ones — unlike PREVIOUS_YEARS'
-// single video per year, a tournament has several (semifinals, final, post
-// -match presentation, ...), and embedding every one would be exactly the
-// "heavy client bundle" / mobile-data cost this app deliberately avoids.
+// (manually ordered, same convention as PREVIOUS_YEARS above). Videos embed
+// inline too (see components/InlineYouTubeToggle.tsx), same click-to-play
+// pattern as Gallery's YearMediaPlayer — the "embedding every match would
+// be a heavy-client-bundle cost" concern this used to be written around
+// doesn't actually apply once nothing loads until tapped: a tournament
+// having several matches (semifinals, final, post-match presentation, ...)
+// just means several independent tiles, not several auto-loaded iframes.
+//
+// Stored as whatever share-link shape gets pasted in (youtu.be/<id>,
+// youtube.com/watch?v=, .../live/, ...) rather than pre-converted to
+// /embed/<id> like LIVE_STREAM_URL and PREVIOUS_YEARS above — those are
+// single, rarely-touched entries; this list grows by several pasted links
+// every tournament, so toYouTubeEmbedUrl (below) does the conversion
+// instead of expecting whoever adds a match video to know the embed form.
 export const CRICKET_TOURNAMENTS: {
   year: number;
   leagueUrl: string;
@@ -111,6 +120,18 @@ export const CRICKET_TOURNAMENTS: {
     ],
   },
 ];
+
+// Recognizes the share-link shapes actually pasted into CRICKET_TOURNAMENTS
+// above (youtu.be/<id>, youtube.com/watch?v=<id>, .../live/<id>) plus
+// .../embed/<id> and .../shorts/<id> for good measure. Returns null for a
+// URL shape this doesn't recognize rather than guessing; callers should
+// fall back to a plain link then.
+export function toYouTubeEmbedUrl(url: string): string | null {
+  const match = url.match(
+    /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|live\/|embed\/|shorts\/))([\w-]{11})/
+  );
+  return match ? `https://www.youtube.com/embed/${match[1]}` : null;
+}
 
 export const NAV_LINKS = [
   { href: "/", label: "Home" },
