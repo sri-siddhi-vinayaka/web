@@ -15,31 +15,41 @@ export default async function GalleryPage() {
 
   // While Live Darshan is still airing, its /live page is the current year's
   // home, not Gallery — hide that entry here until the stream hands off.
+  const currentYear = FESTIVAL_START.getFullYear();
   const previousYears = isLiveDarshanActive()
-    ? PREVIOUS_YEARS.filter((py) => py.year !== FESTIVAL_START.getFullYear())
+    ? PREVIOUS_YEARS.filter((py) => py.year !== currentYear)
     : PREVIOUS_YEARS;
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
       <h1 className="text-2xl font-bold text-brand">Gallery</h1>
 
+      {/* Same h3/year-number heading the Previous Years blocks below use for
+          each past year — so this year's photos already read as "the 2026
+          section" today, and once its video moves down into Previous Years
+          (see isLiveDarshanActive), that's a relocation, not a redesign. */}
       {items.length > 0 && (
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {items.map((item) => (
-            <figure
-              key={item.id}
-              className="relative aspect-square overflow-hidden rounded-xl bg-surface-muted ring-1 ring-border"
-            >
-              <Image
-                src={item.image_url}
-                alt={item.caption ?? "Ganesh Chaturthi celebration photo"}
-                fill
-                sizes="(min-width: 640px) 33vw, 50vw"
-                className="object-cover"
-              />
-            </figure>
-          ))}
-        </div>
+        <section className="mt-6">
+          <h3 className="text-base font-semibold text-foreground">
+            {currentYear}
+          </h3>
+          <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {items.map((item) => (
+              <figure
+                key={item.id}
+                className="relative aspect-square overflow-hidden rounded-xl bg-surface-muted ring-1 ring-border"
+              >
+                <Image
+                  src={item.image_url}
+                  alt={item.caption ?? "Ganesh Chaturthi celebration photo"}
+                  fill
+                  sizes="(min-width: 640px) 33vw, 50vw"
+                  className="object-cover"
+                />
+              </figure>
+            ))}
+          </div>
+        </section>
       )}
 
       {previousYears.length > 0 && (
