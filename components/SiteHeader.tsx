@@ -1,4 +1,5 @@
 import Link from "next/link";
+import CompassIcon from "@/components/icons/CompassIcon";
 import VinayakaIcon from "@/components/icons/VinayakaIcon";
 import MobileNav from "@/components/MobileNav";
 import TourGuideButton from "@/components/TourGuideButton";
@@ -18,9 +19,23 @@ export default function SiteHeader() {
   return (
     <header className="sticky top-0 z-10 border-b border-border bg-surface/95 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-4 sm:px-6">
-        <Link href="/" className="text-brand" aria-label={SITE_NAME}>
-          <VinayakaIcon className="h-8 w-8" />
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/" className="text-brand" aria-label={SITE_NAME}>
+            <VinayakaIcon className="h-8 w-8" />
+          </Link>
+
+          {/* Always visible, on every screen size, right next to the logo —
+              a first-time visitor's most likely next tap, not a line item
+              buried at the end of a nav list (desktop) or behind the
+              hamburger menu (mobile) where it's easy to miss entirely. */}
+          <TourGuideButton
+            aria-label="Take a quick tour of the app"
+            className="flex min-h-11 items-center gap-1 rounded-full bg-primary/10 px-3 text-xs font-semibold text-primary ring-1 ring-primary/30 transition-colors hover:bg-primary/20"
+          >
+            <CompassIcon className="h-4 w-4" />
+            Tour
+          </TourGuideButton>
+        </div>
 
         {/* Six nav items don't fit on a phone without wrapping or a scroll
             hint — collapse to a dropdown below sm:, where there's room for
@@ -35,7 +50,6 @@ export default function SiteHeader() {
               {link.label}
             </Link>
           ))}
-          <TourGuideButton className="rounded-lg px-3 py-2 font-medium text-muted transition-colors hover:bg-surface-muted hover:text-foreground" />
         </nav>
         <div className="sm:hidden">
           <MobileNav links={links} />

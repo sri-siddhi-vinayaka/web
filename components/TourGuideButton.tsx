@@ -1,13 +1,18 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useTourGuide } from "@/components/TourGuideProvider";
 
 export default function TourGuideButton({
   className,
   onBeforeOpen,
+  children,
+  "aria-label": ariaLabel,
 }: {
   className?: string;
   onBeforeOpen?: () => void;
+  children: ReactNode;
+  "aria-label"?: string;
 }) {
   const openTour = useTourGuide();
 
@@ -18,9 +23,10 @@ export default function TourGuideButton({
         onBeforeOpen?.();
         openTour();
       }}
+      aria-label={ariaLabel}
       className={className}
     >
-      Quick Tour Guide
+      {children}
     </button>
   );
 }
