@@ -1,24 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { subscribeToPush } from "@/app/actions/push";
+import { requestPushSubscription } from "@/lib/pushClient";
 
 type Status = "checking" | "unsupported" | "unconfigured" | "idle" | "subscribing" | "subscribed" | "denied" | "error";
 
-function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = window.atob(base64);
-  const output = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; i++) {
-    output[i] = rawData.charCodeAt(i);
-  }
-  return output;
-}
-
 // The one client island for Web Push: registers the service worker (public/sw.js),
-// and on request subscribes the browser and hands the subscription to
-// subscribeToPush() (app/actions/push.ts) to store. Renders nothing if the
+// and on request subscribes the browser via requestPushSubscription()
+// (lib/pushClient.ts — shared with PwaInstallPrompt, which chains that same
+// call right after a successful Android install). Renders nothing if the
 // browser doesn't support push, or if NEXT_PUBLIC_VAPID_PUBLIC_KEY isn't set —
 // same fail-soft posture as the rest of this app's optional integrations.
 
@@ -81,26 +71,15 @@ export default function NotificationOptIn() {
   }, [justSubscribed]);
 
   async function handleEnable() {
-    const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-    if (!publicKey) return;
-
     setStatus("subscribing");
     try {
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") {
-        setStatus(permission === "denied" ? "denied" : "idle");
+      const result = await requestPushSubscription();
+      if (result === "dismissed") {
+        setStatus("idle");
         return;
       }
-
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicKey),
-      });
-
-      const result = await subscribeToPush(subscription.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } });
-      setStatus(result.ok ? "subscribed" : "error");
-      if (result.ok) setJustSubscribed(true);
+      setStatus(result);
+      if (result === "subscribed") setJustSubscribed(true);
     } catch {
       setStatus("error");
     }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import InstallIcon from "@/components/icons/InstallIcon";
+import { requestPushSubscription, type PushSubscribeResult } from "@/lib/pushClient";
 
 // Chrome/Edge/Android fire this instead of installing immediately, so the
 // browser's own UI can be replaced with ours; it's not in lib.dom.d.ts yet.
@@ -34,6 +35,7 @@ export default function PwaInstallPrompt() {
   const [iosInstructionsOpen, setIosInstructionsOpen] = useState(false);
   const [dismissed, setDismissed] = useState(true);
   const [showIosBanner, setShowIosBanner] = useState(false);
+  const [notifResult, setNotifResult] = useState<PushSubscribeResult | null>(null);
 
   useEffect(() => {
     if (isStandalone()) return;
@@ -76,38 +78,78 @@ export default function PwaInstallPrompt() {
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     setDeferredPrompt(null);
-    if (outcome === "accepted") dismiss();
+    if (outcome !== "accepted") return;
+
+    dismiss();
+
+    // Chained immediately after the same install tap, rather than making
+    // the visitor separately notice and click NotificationOptIn's own card
+    // later — folds two opt-ins into one flow. This still shows the
+    // browser's real native permission dialog and still requires an
+    // explicit Allow tap; nothing here skips or pre-answers it. iOS can't
+    // do this at all: Safari has no Push API in a regular browser tab, so
+    // this chaining is Android/Chrome-only — see the iOS instructions
+    // dialog below instead, which sets that expectation for the next step.
+    try {
+      const result = await requestPushSubscription();
+      if (result !== "unconfigured") setNotifResult(result);
+    } catch {
+      setNotifResult("error");
+    }
   }
 
-  if (dismissed || (!deferredPrompt && !showIosBanner)) return null;
+  if (!notifResult && (dismissed || (!deferredPrompt && !showIosBanner))) return null;
 
   return (
     <section className="mx-auto w-full max-w-3xl rounded-2xl bg-surface p-4 shadow-sm ring-1 ring-border">
-      <div className="flex items-center gap-3">
-        <InstallIcon className="h-8 w-8 shrink-0 text-brand" />
-        <div className="flex-1">
-          <p className="text-sm font-medium text-foreground">Add to your home screen</p>
-          <p className="text-xs text-muted">
-            Install this app for quick, one-tap access — no app store needed.
+      {notifResult ? (
+        <div className="flex items-center gap-3">
+          <InstallIcon className="h-8 w-8 shrink-0 text-brand" />
+          <p className="flex-1 text-sm font-medium text-foreground">
+            {notifResult === "subscribed"
+              ? "Installed, and notifications are on — you're all set!"
+              : notifResult === "denied"
+                ? "Installed! Notifications are blocked in your browser settings — enable them there if you change your mind."
+                : "Installed! You can turn on notifications any time further down this page."}
           </p>
+          <button
+            type="button"
+            onClick={() => setNotifResult(null)}
+            aria-label="Dismiss"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-muted hover:text-foreground"
+          >
+            ✕
+          </button>
         </div>
-      </div>
-      <div className="mt-3 flex gap-2">
-        <button
-          type="button"
-          onClick={deferredPrompt ? handleInstall : () => setIosInstructionsOpen(true)}
-          className="min-h-11 flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-contrast transition-opacity hover:opacity-90"
-        >
-          Install app
-        </button>
-        <button
-          type="button"
-          onClick={dismiss}
-          className="min-h-11 rounded-lg px-4 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface-muted"
-        >
-          Not now
-        </button>
-      </div>
+      ) : (
+        <>
+          <div className="flex items-center gap-3">
+            <InstallIcon className="h-8 w-8 shrink-0 text-brand" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground">Add to your home screen</p>
+              <p className="text-xs text-muted">
+                Install this app for quick, one-tap access — no app store needed.
+              </p>
+            </div>
+          </div>
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onClick={deferredPrompt ? handleInstall : () => setIosInstructionsOpen(true)}
+              className="min-h-11 flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-contrast transition-opacity hover:opacity-90"
+            >
+              Install app
+            </button>
+            <button
+              type="button"
+              onClick={dismiss}
+              className="min-h-11 rounded-lg px-4 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface-muted"
+            >
+              Not now
+            </button>
+          </div>
+        </>
+      )}
 
       {iosInstructionsOpen && (
         <div
@@ -127,6 +169,13 @@ export default function PwaInstallPrompt() {
               <li>Scroll down and tap &quot;Add to Home Screen&quot;</li>
               <li>Tap &quot;Add&quot; to confirm</li>
             </ol>
+            {/* Safari has no Push API at all in a regular browser tab —
+                notifications only become available once this is opened from
+                the Home Screen icon, so that's the honest next step to set
+                here rather than a step this dialog could complete itself. */}
+            <p className="mt-2 text-sm text-muted">
+              Then open it from your Home Screen — that&apos;s where you&apos;ll be able to turn on notifications too.
+            </p>
             <button
               type="button"
               onClick={() => {
