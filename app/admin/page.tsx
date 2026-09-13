@@ -2,18 +2,23 @@ import type { Metadata } from "next";
 import { isAdminRequest } from "@/lib/adminAuth";
 import { isSupabaseAdminConfigured, supabaseAdmin } from "@/lib/supabaseAdmin";
 import { getAnnouncements, getEvents, getGalleryItems } from "@/lib/events";
+import { getCharityMedia, getCharityYears } from "@/lib/charity";
+import AddCharityMediaForm from "@/components/AddCharityMediaForm";
 import AddEventForm from "@/components/AddEventForm";
 import EditEventForm from "@/components/EditEventForm";
 import {
   addGalleryItemAction,
   createAnnouncementAction,
   deleteAnnouncementAction,
+  deleteCharityMediaAction,
+  deleteCharityYearAction,
   deleteEventAction,
   deleteGalleryItemAction,
   deleteRegistrationAction,
   deleteSuggestionAction,
   loginAction,
   logoutAction,
+  saveCharityYearStoryAction,
   setRegistrationStatusAction,
 } from "@/app/actions/admin";
 
@@ -120,14 +125,17 @@ export default async function AdminPage(props: PageProps<"/admin">) {
     );
   }
 
-  const [events, registrations, foodRegistrations, suggestions, announcements, galleryItems] = await Promise.all([
-    getEvents(),
-    getRegistrations(),
-    getFoodRegistrations(),
-    getSuggestions(),
-    getAnnouncements(),
-    getGalleryItems(),
-  ]);
+  const [events, registrations, foodRegistrations, suggestions, announcements, galleryItems, charityYears, charityMedia] =
+    await Promise.all([
+      getEvents(),
+      getRegistrations(),
+      getFoodRegistrations(),
+      getSuggestions(),
+      getAnnouncements(),
+      getGalleryItems(),
+      getCharityYears(),
+      getCharityMedia(),
+    ]);
 
   const pendingCount = registrations.filter((registration) => registration.status === "pending").length;
 
@@ -412,6 +420,102 @@ export default async function AdminPage(props: PageProps<"/admin">) {
               </form>
             </li>
           ))}
+        </ul>
+      </section>
+
+      <section className="mt-8">
+        <h2 className="text-lg font-semibold text-foreground">Charity</h2>
+        <p className="mt-1 text-sm text-muted">
+          Privately stored — visitors can view these on the Charity page, but
+          there&apos;s no public listing or download link.
+        </p>
+
+        <h3 className="mt-4 text-sm font-semibold text-foreground">Year write-ups</h3>
+        <form
+          action={saveCharityYearStoryAction}
+          className="mt-2 flex flex-col gap-2 rounded-2xl bg-surface p-4 shadow-sm ring-1 ring-border"
+        >
+          <input
+            name="year"
+            type="number"
+            placeholder="Year"
+            required
+            defaultValue={new Date().getFullYear()}
+            className="min-h-11 w-28 rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
+          />
+          <textarea
+            name="story"
+            placeholder="What kind of help was provided this year, and to whom?"
+            required
+            rows={4}
+            className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
+          />
+          <button
+            type="submit"
+            className="min-h-11 self-start rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-contrast hover:opacity-90"
+          >
+            Save year write-up
+          </button>
+        </form>
+        <ul className="mt-3 flex flex-col gap-2">
+          {charityYears.map((entry) => (
+            <li
+              key={entry.year}
+              className="rounded-xl bg-surface p-3 text-sm ring-1 ring-border"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <span className="font-semibold text-foreground">{entry.year}</span>
+                <form action={deleteCharityYearAction.bind(null, entry.year)}>
+                  <button type="submit" className="text-xs text-danger underline underline-offset-2">
+                    Delete
+                  </button>
+                </form>
+              </div>
+              <p className="mt-1 text-muted">{entry.story}</p>
+            </li>
+          ))}
+          {charityYears.length === 0 && (
+            <li className="rounded-xl bg-surface p-3 text-center text-sm text-muted ring-1 ring-border">
+              No year write-ups yet.
+            </li>
+          )}
+        </ul>
+
+        <h3 className="mt-6 text-sm font-semibold text-foreground">
+          Photos &amp; videos ({charityMedia.length})
+        </h3>
+        <AddCharityMediaForm defaultYear={new Date().getFullYear()} />
+        <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {charityMedia.map((item) => (
+            <li
+              key={item.id}
+              className="flex flex-col gap-1 rounded-xl bg-surface p-2 text-xs ring-1 ring-border"
+            >
+              {item.media_type === "video" ? (
+                <video src={item.url} controls preload="none" className="aspect-square w-full rounded-lg object-cover" />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element -- see app/charity/page.tsx
+                <img
+                  src={item.url}
+                  alt={item.caption ?? ""}
+                  className="aspect-square w-full rounded-lg object-cover"
+                />
+              )}
+              <span className="truncate text-muted">
+                {item.year} — {item.caption ?? "—"}
+              </span>
+              <form action={deleteCharityMediaAction.bind(null, item.id, item.storage_path)}>
+                <button type="submit" className="text-danger underline underline-offset-2">
+                  Delete
+                </button>
+              </form>
+            </li>
+          ))}
+          {charityMedia.length === 0 && (
+            <li className="col-span-full rounded-xl bg-surface p-3 text-center text-sm text-muted ring-1 ring-border">
+              No photos or videos yet.
+            </li>
+          )}
         </ul>
       </section>
     </div>
