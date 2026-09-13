@@ -1,11 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import ClaimedDishesList from "@/components/ClaimedDishesList";
+import DayAccordionItem from "@/components/DayAccordionItem";
 import DayCalendarStrip from "@/components/DayCalendarStrip";
+import DayStatLine from "@/components/DayStatLine";
 import FoodRegistrationForm from "@/components/FoodRegistrationForm";
 import FreeRegistrationNotice from "@/components/FreeRegistrationNotice";
 import PrivacyNotice from "@/components/PrivacyNotice";
-import { dedupeByDay, getEvents, getPoojaRegistrableDays, getUpcomingDays } from "@/lib/events";
+import {
+  dedupeByDay,
+  getEvents,
+  getPoojaRegistrableDays,
+  getRegistrationCount,
+  getUpcomingDays,
+} from "@/lib/events";
 import { getClaimedDishes } from "@/lib/food";
 
 export const metadata: Metadata = { title: "Food Registration" };
@@ -37,9 +45,18 @@ export default async function FoodRegistrationPage() {
   const poojaRegistrableDayNumbers = new Set(
     getPoojaRegistrableDays(dedupedDays).map((day) => day.day_number)
   );
-  const dishesByDay = new Map(
-    await Promise.all(days.map(async (day) => [day.id, await getClaimedDishes(day.id)] as const))
-  );
+  // Fetches Pooja registration counts too, not just claimed dishes — the
+  // accordion header shows both signals for every day (see DayStatLine) so
+  // picking a day here means weighing Pooja registration's numbers too,
+  // not just this page's own.
+  const [dishesByDay, poojaCountsByDay] = await Promise.all([
+    Promise.all(days.map(async (day) => [day.id, await getClaimedDishes(day.id)] as const)).then(
+      (entries) => new Map(entries)
+    ),
+    Promise.all(days.map(async (day) => [day.id, await getRegistrationCount(day.id)] as const)).then(
+      (entries) => new Map(entries)
+    ),
+  ]);
 
   return (
     <div className="mx-auto w-full max-w-md px-4 py-10 sm:px-6">
@@ -71,14 +88,25 @@ export default async function FoodRegistrationPage() {
             <DayCalendarStrip days={days} />
           </div>
 
-          <div className="mt-8 flex flex-col gap-8">
+          <div className="mt-6 flex flex-col gap-3">
             {days.map((day) => (
-              <section key={day.id} id={`day-${day.day_number}`}>
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-accent">
-                  Day {day.day_number} — {formatDate(day.start_time)}
-                </h2>
-
-                <div className="mt-3">
+              <DayAccordionItem
+                key={day.id}
+                dayNumber={day.day_number}
+                header={
+                  <div>
+                    <h2 className="text-sm font-semibold uppercase tracking-wide text-accent">
+                      Day {day.day_number} — {formatDate(day.start_time)}
+                    </h2>
+                    <DayStatLine
+                      eventId={day.id}
+                      initialRegisteredCount={poojaCountsByDay.get(day.id) ?? 0}
+                      initialDishCount={dishesByDay.get(day.id)?.length ?? 0}
+                    />
+                  </div>
+                }
+              >
+                <div>
                   <h3 className="text-sm font-medium text-foreground">Dishes already claimed</h3>
                   <div className="mt-2">
                     <ClaimedDishesList eventId={day.id} initialDishes={dishesByDay.get(day.id) ?? []} />
@@ -97,7 +125,7 @@ export default async function FoodRegistrationPage() {
                     Want to attend Pooja too? Switch to Pooja Registration for this day →
                   </Link>
                 )}
-              </section>
+              </DayAccordionItem>
             ))}
           </div>
         </>
