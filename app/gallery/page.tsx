@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import YearMediaPlayer from "@/components/YearMediaPlayer";
 import { getGalleryItems, isLiveDarshanActive } from "@/lib/events";
-import { FESTIVAL_START, PREVIOUS_YEARS } from "@/lib/config";
+import { FESTIVAL_START, PREVIOUS_YEARS, toInstagramEmbedUrl } from "@/lib/config";
 
 export const metadata: Metadata = { title: "Gallery" };
 
@@ -58,40 +59,24 @@ export default async function GalleryPage() {
             Previous Years
           </h2>
 
-          {/* One block per year (newest first, see PREVIOUS_YEARS) rather
-              than every YouTube embed stacked above every Instagram link —
-              a year's own video and reel sit together under its own year
-              heading, so it's clear which clip belongs to which year. */}
+          {/* One block per year (newest first, see PREVIOUS_YEARS) — a
+              year's own video and reel sit together under its own year
+              heading, so it's clear which clip belongs to which year. Both
+              platforms embed inline (YearMediaPlayer) rather than sending
+              anyone to youtube.com or instagram.com. */}
           <div className="mt-4 flex flex-col gap-8">
             {previousYears.map((py) => (
               <div key={py.year}>
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-base font-semibold text-foreground">
-                    {py.year}
-                  </h3>
-                  {py.instagramUrl && (
-                    <a
-                      href={py.instagramUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-foreground ring-1 ring-border transition-colors hover:bg-surface-muted"
-                    >
-                      Watch on Instagram
-                    </a>
-                  )}
-                </div>
-
-                {py.youtubeEmbedUrl && (
-                  <div className="mt-2 aspect-video w-full overflow-hidden rounded-2xl bg-black ring-1 ring-border">
-                    <iframe
-                      src={py.youtubeEmbedUrl}
-                      title={`${py.year} pooja celebration recording`}
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                      className="h-full w-full"
-                    />
-                  </div>
-                )}
+                <h3 className="text-base font-semibold text-foreground">
+                  {py.year}
+                </h3>
+                <YearMediaPlayer
+                  year={py.year}
+                  youtubeEmbedUrl={py.youtubeEmbedUrl}
+                  instagramEmbedUrl={
+                    py.instagramUrl ? (toInstagramEmbedUrl(py.instagramUrl) ?? undefined) : undefined
+                  }
+                />
               </div>
             ))}
           </div>

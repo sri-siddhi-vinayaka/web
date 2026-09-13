@@ -22,11 +22,17 @@ export const VENUE_ADDRESS = "2526 Kilpeck Dr, Henrico, VA";
 export const VENUE_MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(VENUE_ADDRESS)}`;
 
 // Highlights from past celebrations, shown on the Gallery page below the
-// admin-managed photo grid. Linked out rather than embedded or scraped:
-// Instagram's oEmbed API now requires an app-review access token we don't
-// have, and a script-tag embed would violate the no-heavy-client-bundles
-// rule. The YouTube recordings are the exception — a plain <iframe> costs
-// nothing extra to embed inline (same pattern as the live darshan embed).
+// admin-managed photo grid, embedded rather than scraped or linked out —
+// Instagram's oEmbed API needs an app-review access token we don't have,
+// and loading their embed.js script onto our own page would violate the
+// no-heavy-client-bundles rule, but neither of those is what
+// toInstagramEmbedUrl (below) uses. It points at Instagram's own
+// plain-iframe embed endpoint (instagram.com/reel/<code>/embed) — no
+// script, no API key, same cost profile as the YouTube <iframe> already
+// used here: the embedded page's own weight loads in its own cross-origin
+// browsing context, not our JS bundle. See components/YearMediaPlayer.tsx
+// for how both platforms render as click-to-play, not auto-loaded, so nine
+// years' worth of iframes are never all live at once on a slow connection.
 //
 // Newest year first. instagramUrl is optional for exactly one reason: the
 // current festival's own entry (added below) only has its YouTube recording
@@ -64,6 +70,16 @@ export const PREVIOUS_YEARS: {
     instagramUrl: "https://www.instagram.com/reel/Ch6T6z2jlid/?igsh=M2x5NTVyeTMyOGUz",
   },
 ];
+
+// PREVIOUS_YEARS stores the ordinary share-link permalink (what gets copied
+// from the Instagram app) — this derives the embeddable form from it, so
+// whoever fills in a future year's instagramUrl never has to know the embed
+// endpoint exists. Returns null for a URL shape this doesn't recognize,
+// rather than guessing; callers should fall back to a plain link then.
+export function toInstagramEmbedUrl(permalink: string): string | null {
+  const match = permalink.match(/instagram\.com\/(reel|p)\/([^/?]+)/);
+  return match ? `https://www.instagram.com/${match[1]}/${match[2]}/embed` : null;
+}
 
 // Memories from the association's cricket tournaments, newest year first
 // (manually ordered, same convention as PREVIOUS_YEARS above). Plain links
