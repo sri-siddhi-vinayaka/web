@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import RegistrationCount from "@/components/RegistrationCount";
-import { getEvents, getRegistrationCount } from "@/lib/events";
+import { getEvents, getRegistrationCount, isLiveDarshanActive } from "@/lib/events";
 import { FESTIVAL_END, FESTIVAL_START } from "@/lib/config";
 import type { EventItem } from "@/types";
 
@@ -134,8 +134,10 @@ export default async function SchedulePage() {
               {/* Day 1 only — that's where the live stream starts (see
                   LIVE_STREAM_URL in lib/config.ts). Points at our own /live
                   page rather than the raw YouTube URL directly, same as
-                  every other internal link on this page. */}
-              {dayNumber === firstDay && (
+                  every other internal link on this page. Disappears once
+                  Day 1 (ET) is over — isLiveDarshanActive — since the
+                  recording has moved to Gallery by then instead. */}
+              {dayNumber === firstDay && isLiveDarshanActive() && (
                 <Link
                   href="/live"
                   className="min-h-11 flex-1 rounded-lg bg-surface-muted px-3 py-2 text-center text-sm font-medium text-foreground ring-1 ring-border transition-colors hover:bg-border"

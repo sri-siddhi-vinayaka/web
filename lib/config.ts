@@ -25,13 +25,27 @@ export const VENUE_MAPS_URL = `https://www.google.com/maps/search/?api=1&query=$
 // admin-managed photo grid. Linked out rather than embedded or scraped:
 // Instagram's oEmbed API now requires an app-review access token we don't
 // have, and a script-tag embed would violate the no-heavy-client-bundles
-// rule. The 2025 YouTube recording is the exception — a plain <iframe> costs
+// rule. The YouTube recordings are the exception — a plain <iframe> costs
 // nothing extra to embed inline (same pattern as the live darshan embed).
+//
+// Newest year first. instagramUrl is optional for exactly one reason: the
+// current festival's own entry (added below) only has its YouTube recording
+// the moment Live Darshan hands off to Gallery (see isLiveDarshanActive in
+// lib/events.ts) — the Instagram highlight reel goes up later. Add that URL
+// here once the committee has it; until then app/gallery/page.tsx just
+// skips the Instagram tile for a year that doesn't have one yet.
 export const PREVIOUS_YEARS: {
   year: number;
-  instagramUrl: string;
+  instagramUrl?: string;
   youtubeEmbedUrl?: string;
 }[] = [
+  {
+    // Same video LIVE_STREAM_URL points at — a YouTube live stream becomes
+    // its own recording at the same URL once it ends, so this is already the
+    // right embed for "moved to Gallery" with no new link to go find.
+    year: FESTIVAL_START.getFullYear(),
+    youtubeEmbedUrl: LIVE_STREAM_URL,
+  },
   {
     year: 2025,
     instagramUrl: "https://www.instagram.com/reel/DN3r3SWwu6G/?igsh=c2d3NnZrdXEwNHZy",

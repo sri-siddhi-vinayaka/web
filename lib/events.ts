@@ -82,6 +82,17 @@ function calendarDateKey(date: Date): string {
   return date.toLocaleDateString("en-CA", { timeZone: FESTIVAL_TIME_ZONE });
 }
 
+// Live Darshan only streams on Day 1 (Ganesh Sthapana, FESTIVAL_START's
+// calendar date) — once that ET calendar day is over, the stream itself is
+// done, so /live stops being a separate page, its nav link and schedule
+// link disappear, and the recording surfaces instead as the current year's
+// entry in the Gallery's Previous Years section. Comparing calendar-date
+// strings (not raw Date math) keeps this correct across the EDT/EST
+// transition, same reasoning as calendarDateKey above.
+export function isLiveDarshanActive(now: Date = new Date()): boolean {
+  return calendarDateKey(now) <= calendarDateKey(FESTIVAL_START);
+}
+
 export function getTodayHighlights(events: EventItem[], now: Date = new Date()): EventItem[] {
   const dayNumber =
     Math.round(
