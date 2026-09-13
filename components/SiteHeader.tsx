@@ -1,6 +1,7 @@
 import Link from "next/link";
 import VinayakaIcon from "@/components/icons/VinayakaIcon";
 import MobileNav from "@/components/MobileNav";
+import TourGuideButton from "@/components/TourGuideButton";
 import { NAV_LINKS, SITE_NAME } from "@/lib/config";
 import { isLiveDarshanActive } from "@/lib/events";
 
@@ -34,6 +35,7 @@ export default function SiteHeader() {
               {link.label}
             </Link>
           ))}
+          <TourGuideButton className="rounded-lg px-3 py-2 font-medium text-muted transition-colors hover:bg-surface-muted hover:text-foreground" />
         </nav>
         <div className="sm:hidden">
           <MobileNav links={links} />

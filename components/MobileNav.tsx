@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import TourGuideButton from "@/components/TourGuideButton";
 import type { NAV_LINKS } from "@/lib/config";
 
 export default function MobileNav({ links }: { links: readonly (typeof NAV_LINKS)[number][] }) {
@@ -72,6 +73,10 @@ export default function MobileNav({ links }: { links: readonly (typeof NAV_LINKS
                   {link.label}
                 </Link>
               ))}
+              <TourGuideButton
+                onBeforeOpen={() => setOpen(false)}
+                className="block w-full min-h-11 rounded-lg px-4 py-3 text-left text-sm font-medium text-foreground transition-colors hover:bg-surface-muted"
+              />
             </nav>
           </>,
           document.body

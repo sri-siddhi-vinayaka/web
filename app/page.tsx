@@ -3,6 +3,7 @@ import type { ComponentType } from "react";
 import CountdownTimer from "@/components/CountdownTimer";
 import GaneshaPhoto from "@/components/GaneshaPhoto";
 import NotificationOptIn from "@/components/NotificationOptIn";
+import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 import ScrollIcon from "@/components/icons/ScrollIcon";
 import CalendarIcon from "@/components/icons/CalendarIcon";
 import { getEvents, getTodayHighlights } from "@/lib/events";
@@ -110,6 +111,7 @@ export default async function Home() {
         )}
       </section>
 
+      <PwaInstallPrompt />
       <NotificationOptIn />
 
       <section className="mx-auto w-full max-w-3xl rounded-2xl bg-surface p-6 text-center shadow-sm ring-1 ring-border">
