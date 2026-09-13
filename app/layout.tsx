@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Yatra_One } from "next/font/google";
 import SiteHeader from "@/components/SiteHeader";
-import { SITE_NAME } from "@/lib/config";
+import TourGuideProvider from "@/components/TourGuideProvider";
+import { FESTIVAL_END, FESTIVAL_START, SITE_NAME } from "@/lib/config";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -44,6 +45,18 @@ export const viewport: Viewport = {
   themeColor: "#6e1b33",
 };
 
+function formatDay(date: Date): string {
+  return date.toLocaleDateString("en-US", {
+    timeZone: "America/New_York",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+// FESTIVAL_END is an exclusive upper bound (see its comment in
+// lib/config.ts) — the festival's actual last day is one day before it.
+const FESTIVAL_LAST_DAY = new Date(FESTIVAL_END.getTime() - 24 * 60 * 60 * 1000);
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
@@ -55,8 +68,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           positive, not a real mismatch. Scoped to this element only, so it
           won't hide a genuine mismatch elsewhere in the tree. */}
       <body className="flex min-h-full flex-col" suppressHydrationWarning>
-        <SiteHeader />
-        <main className="flex flex-1 flex-col">{children}</main>
+        <TourGuideProvider sthapanaDate={formatDay(FESTIVAL_START)} ladooDate={formatDay(FESTIVAL_LAST_DAY)}>
+          <SiteHeader />
+          <main className="flex flex-1 flex-col">{children}</main>
+        </TourGuideProvider>
       </body>
     </html>
   );
