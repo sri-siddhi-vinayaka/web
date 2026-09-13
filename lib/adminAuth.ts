@@ -28,7 +28,16 @@ function adminCookieValue(): string {
 }
 
 export function verifyAdminPassword(password: string): boolean {
-  return Boolean(ADMIN_PASSWORD) && password === ADMIN_PASSWORD;
+  if (!ADMIN_PASSWORD) return false;
+
+  // timingSafeEqual, not ===, same reasoning as isAdminRequest's cookie
+  // check below — a plain string comparison short-circuits on the first
+  // mismatched byte, leaking a (theoretical, network-jitter-dominated but
+  // free to close) timing signal about how many leading characters of a
+  // guess were correct.
+  const expected = Buffer.from(ADMIN_PASSWORD);
+  const actual = Buffer.from(password);
+  return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
 
 export async function isAdminRequest(): Promise<boolean> {
