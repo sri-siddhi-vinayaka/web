@@ -86,9 +86,9 @@ function calendarDateKey(date: Date): string {
 // calendar date) — once that ET calendar day is over, the stream itself is
 // done, so /live stops being a separate page, its nav link and schedule
 // link disappear, and the recording surfaces instead as the current year's
-// entry in the Gallery's Previous Years section. Comparing calendar-date
-// strings (not raw Date math) keeps this correct across the EDT/EST
-// transition, same reasoning as calendarDateKey above.
+// section on the Gallery page. Comparing calendar-date strings (not raw
+// Date math) keeps this correct across the EDT/EST transition, same
+// reasoning as calendarDateKey above.
 export function isLiveDarshanActive(now: Date = new Date()): boolean {
   return calendarDateKey(now) <= calendarDateKey(FESTIVAL_START);
 }
