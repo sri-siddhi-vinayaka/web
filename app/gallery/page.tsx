@@ -18,7 +18,6 @@ export default async function GalleryPage() {
   const previousYears = isLiveDarshanActive()
     ? PREVIOUS_YEARS.filter((py) => py.year !== FESTIVAL_START.getFullYear())
     : PREVIOUS_YEARS;
-  const instagramYears = previousYears.filter((py) => py.instagramUrl);
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
@@ -49,40 +48,43 @@ export default async function GalleryPage() {
             Previous Years
           </h2>
 
-          {previousYears.filter((py) => py.youtubeEmbedUrl).map((py) => (
-            <div
-              key={py.year}
-              className="mt-4 aspect-video w-full overflow-hidden rounded-2xl bg-black ring-1 ring-border"
-            >
-              <iframe
-                src={py.youtubeEmbedUrl}
-                title={`${py.year} pooja celebration recording`}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="h-full w-full"
-              />
-            </div>
-          ))}
+          {/* One block per year (newest first, see PREVIOUS_YEARS) rather
+              than every YouTube embed stacked above every Instagram link —
+              a year's own video and reel sit together under its own year
+              heading, so it's clear which clip belongs to which year. */}
+          <div className="mt-4 flex flex-col gap-8">
+            {previousYears.map((py) => (
+              <div key={py.year}>
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-base font-semibold text-foreground">
+                    {py.year}
+                  </h3>
+                  {py.instagramUrl && (
+                    <a
+                      href={py.instagramUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-foreground ring-1 ring-border transition-colors hover:bg-surface-muted"
+                    >
+                      Watch on Instagram
+                    </a>
+                  )}
+                </div>
 
-          {instagramYears.length > 0 && (
-            <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {instagramYears.map((py) => (
-                <li key={py.year}>
-                  <a
-                    href={py.instagramUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl bg-surface p-3 text-center shadow-sm ring-1 ring-border transition-colors hover:bg-surface-muted"
-                  >
-                    <span className="text-sm font-medium text-foreground">
-                      {py.year}
-                    </span>
-                    <span className="text-xs text-muted">Watch on Instagram</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          )}
+                {py.youtubeEmbedUrl && (
+                  <div className="mt-2 aspect-video w-full overflow-hidden rounded-2xl bg-black ring-1 ring-border">
+                    <iframe
+                      src={py.youtubeEmbedUrl}
+                      title={`${py.year} pooja celebration recording`}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="h-full w-full"
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </section>
       )}
     </div>
