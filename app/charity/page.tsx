@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import CharityMediaGrid from "@/components/CharityMediaGrid";
 import { getCharityMedia, getCharityYears } from "@/lib/charity";
 
 export const metadata: Metadata = { title: "Charity" };
@@ -64,42 +65,7 @@ export default async function CharityPage() {
               </p>
 
               {section.media.length > 0 ? (
-                <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {section.media.map((item) => (
-                    <figure
-                      key={item.id}
-                      className="relative aspect-square overflow-hidden rounded-xl bg-surface-muted ring-1 ring-border"
-                    >
-                      {item.media_type === "video" ? (
-                        <video
-                          src={item.url}
-                          controls
-                          controlsList="nodownload"
-                          preload="none"
-                          playsInline
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        // A signed URL is a fresh, one-time query string per
-                        // render; next/image's optimizer cache would keep
-                        // serving a copy past the URL's own expiry, and
-                        // re-signing on every optimizer fetch defeats the
-                        // point of using one.
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={item.url}
-                          alt={item.caption ?? "Photo from the association's charitable work"}
-                          className="h-full w-full object-cover"
-                        />
-                      )}
-                      {item.caption && (
-                        <figcaption className="absolute inset-x-0 bottom-0 bg-black/50 px-2 py-1 text-xs text-white">
-                          {item.caption}
-                        </figcaption>
-                      )}
-                    </figure>
-                  ))}
-                </div>
+                <CharityMediaGrid items={section.media} />
               ) : (
                 <p className="mt-4 text-sm text-muted">
                   Photos and videos from this year are being added here soon.
