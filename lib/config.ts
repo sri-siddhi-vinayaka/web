@@ -21,17 +21,44 @@ export const LIVE_STREAM_URL = "https://www.youtube.com/embed/bizFLsnlvZo";
 export const VENUE_ADDRESS = "2526 Kilpeck Dr, Henrico, VA";
 export const VENUE_MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(VENUE_ADDRESS)}`;
 
-// Highlights from past celebrations, shown on the Gallery page below the
-// admin-managed photo grid. Linked out rather than embedded or scraped:
-// Instagram's oEmbed API now requires an app-review access token we don't
-// have, and a script-tag embed would violate the no-heavy-client-bundles
-// rule. The 2025 YouTube recording is the exception — a plain <iframe> costs
-// nothing extra to embed inline (same pattern as the live darshan embed).
+// Highlights from past celebrations, shown on the Gallery page grouped by
+// year alongside the admin-managed photo grid. YouTube and Instagram are
+// genuinely different here, not just two branches of the same idea:
+// YouTube's plain <iframe src=".../embed/<id>"> is a true inline player
+// that costs nothing extra (its own weight loads in its own cross-origin
+// browsing context, not our JS bundle). Instagram has no public equivalent
+// — their oEmbed response (checked directly against the Graph API) is a
+// static preview card with the *entire* card wrapped in one
+// <a target="_blank">; there's no anonymous inline player to embed, by
+// Instagram's own design, not a bug on our end. So Instagram gets their
+// official embed.js + <blockquote> handshake instead — a real, on-site
+// preview card rather than the raw iframe's outright redirect-on-tap — but
+// tapping it still opens Instagram in a new tab; that's the ceiling for a
+// free, public embed. Loaded lazily by components/YearMediaPlayer.tsx only
+// the first time someone taps an Instagram tile, never on page load, so it
+// isn't the heavy-client-bundle cost this app otherwise avoids, just a
+// deferred one paid by whoever actually wants to look. Nothing auto-plays
+// either way; every tile here is click-to-play so five years of embeds are
+// never all live at once on the venue's slow mobile data.
+//
+// Newest year first. instagramUrl is optional for exactly one reason: the
+// current festival's own entry (added below) only has its YouTube recording
+// the moment Live Darshan hands off to Gallery (see isLiveDarshanActive in
+// lib/events.ts) — the Instagram highlight reel goes up later. Add that URL
+// here once the committee has it; until then app/gallery/page.tsx just
+// skips the Instagram tile for a year that doesn't have one yet.
 export const PREVIOUS_YEARS: {
   year: number;
-  instagramUrl: string;
+  instagramUrl?: string;
   youtubeEmbedUrl?: string;
 }[] = [
+  {
+    // Same video LIVE_STREAM_URL points at — a YouTube live stream becomes
+    // its own recording at the same URL once it ends, so this is already the
+    // right embed for "moved to Gallery" with no new link to go find.
+    year: FESTIVAL_START.getFullYear(),
+    youtubeEmbedUrl: LIVE_STREAM_URL,
+  },
   {
     year: 2025,
     instagramUrl: "https://www.instagram.com/reel/DN3r3SWwu6G/?igsh=c2d3NnZrdXEwNHZy",
@@ -52,11 +79,20 @@ export const PREVIOUS_YEARS: {
 ];
 
 // Memories from the association's cricket tournaments, newest year first
-// (manually ordered, same convention as PREVIOUS_YEARS above). Plain links
-// rather than embeds, even for the YouTube ones — unlike PREVIOUS_YEARS'
-// single video per year, a tournament has several (semifinals, final, post
-// -match presentation, ...), and embedding every one would be exactly the
-// "heavy client bundle" / mobile-data cost this app deliberately avoids.
+// (manually ordered, same convention as PREVIOUS_YEARS above). Videos embed
+// inline too (see components/InlineYouTubeToggle.tsx), same click-to-play
+// pattern as Gallery's YearMediaPlayer — the "embedding every match would
+// be a heavy-client-bundle cost" concern this used to be written around
+// doesn't actually apply once nothing loads until tapped: a tournament
+// having several matches (semifinals, final, post-match presentation, ...)
+// just means several independent tiles, not several auto-loaded iframes.
+//
+// Stored as whatever share-link shape gets pasted in (youtu.be/<id>,
+// youtube.com/watch?v=, .../live/, ...) rather than pre-converted to
+// /embed/<id> like LIVE_STREAM_URL and PREVIOUS_YEARS above — those are
+// single, rarely-touched entries; this list grows by several pasted links
+// every tournament, so toYouTubeEmbedUrl (below) does the conversion
+// instead of expecting whoever adds a match video to know the embed form.
 export const CRICKET_TOURNAMENTS: {
   year: number;
   leagueUrl: string;
@@ -84,6 +120,18 @@ export const CRICKET_TOURNAMENTS: {
     ],
   },
 ];
+
+// Recognizes the share-link shapes actually pasted into CRICKET_TOURNAMENTS
+// above (youtu.be/<id>, youtube.com/watch?v=<id>, .../live/<id>) plus
+// .../embed/<id> and .../shorts/<id> for good measure. Returns null for a
+// URL shape this doesn't recognize rather than guessing; callers should
+// fall back to a plain link then.
+export function toYouTubeEmbedUrl(url: string): string | null {
+  const match = url.match(
+    /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|live\/|embed\/|shorts\/))([\w-]{11})/
+  );
+  return match ? `https://www.youtube.com/embed/${match[1]}` : null;
+}
 
 export const NAV_LINKS = [
   { href: "/", label: "Home" },

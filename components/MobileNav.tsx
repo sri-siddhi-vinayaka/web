@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { NAV_LINKS } from "@/lib/config";
+import type { NAV_LINKS } from "@/lib/config";
 
-export default function MobileNav() {
+export default function MobileNav({ links }: { links: readonly (typeof NAV_LINKS)[number][] }) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -62,7 +62,7 @@ export default function MobileNav() {
               id="mobile-nav-menu"
               className="fixed right-4 top-16 z-20 w-56 rounded-2xl bg-surface p-2 shadow-lg ring-1 ring-border sm:hidden"
             >
-              {NAV_LINKS.slice(1).map((link) => (
+              {links.slice(1).map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
