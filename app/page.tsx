@@ -51,6 +51,14 @@ const QUICK_LINKS: { href: string; label: string; Icon: ComponentType<{ classNam
 export default async function Home() {
   const events = await getEvents();
   const highlights = getTodayHighlights(events);
+  // Count down to Live Darshan actually starting (Day 1's event, currently
+  // 7:45 PM ET — see supabase/migrations/20260913080000_day1_start_time_fix.sql),
+  // not FESTIVAL_START's midnight boundary — nothing visibly happens at
+  // midnight, so a countdown to it reads as broken once that hour passes
+  // with no celebration in sight. Falls back to FESTIVAL_START only if the
+  // schedule hasn't been seeded yet.
+  const liveDarshanStart =
+    events.find((event) => event.day_number === 1)?.start_time ?? FESTIVAL_START.toISOString();
 
   return (
     <div className="flex flex-col gap-10 px-4 py-10 sm:px-6">
@@ -72,7 +80,7 @@ export default async function Home() {
           updated, all in one place.
         </p>
         <CountdownTimer
-          start={FESTIVAL_START.toISOString()}
+          start={liveDarshanStart}
           end={FESTIVAL_END.toISOString()}
         />
       </section>
