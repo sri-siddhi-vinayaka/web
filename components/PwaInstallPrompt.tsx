@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import InstallIcon from "@/components/icons/InstallIcon";
+import ShareIcon from "@/components/icons/ShareIcon";
 import { requestPushSubscription, type PushSubscribeResult } from "@/lib/pushClient";
 
 // Chrome/Edge/Android fire this instead of installing immediately, so the
@@ -37,6 +38,13 @@ function isIosNonSafariBrowser(): boolean {
   return /CriOS|FxiOS|EdgiOS|OPiOS/i.test(navigator.userAgent);
 }
 
+// iPad's Safari toolbar (and its Share icon) sits at the top, next to the
+// address bar — the opposite edge from iPhone's bottom toolbar — so the
+// bounce-arrow hint below needs to point the right way for each.
+function isIpad(): boolean {
+  return /ipad/i.test(navigator.userAgent);
+}
+
 // Registers the service worker itself (idempotent — NotificationOptIn may
 // have already done this on the Home page) since a registered SW covering
 // start_url is one of Chrome's installability requirements; this banner
@@ -47,6 +55,7 @@ export default function PwaInstallPrompt() {
   const [dismissed, setDismissed] = useState(true);
   const [showIosBanner, setShowIosBanner] = useState(false);
   const [isIosOtherBrowser, setIsIosOtherBrowser] = useState(false);
+  const [isIpadDevice, setIsIpadDevice] = useState(false);
   const [notifResult, setNotifResult] = useState<PushSubscribeResult | null>(null);
 
   useEffect(() => {
@@ -74,6 +83,7 @@ export default function PwaInstallPrompt() {
       if (isIos()) {
         setShowIosBanner(true);
         setIsIosOtherBrowser(isIosNonSafariBrowser());
+        setIsIpadDevice(isIpad());
       }
     }, 0);
 
@@ -188,11 +198,19 @@ export default function PwaInstallPrompt() {
               <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-muted">
                 <li>Tap the ••• or Share icon in this browser</li>
                 <li>Choose &quot;Open in Safari&quot;</li>
-                <li>In Safari, tap the Share button, then &quot;Add to Home Screen&quot;</li>
+                <li className="flex flex-wrap items-center gap-1">
+                  In Safari, tap
+                  <ShareIcon className="inline h-4 w-4 shrink-0 text-foreground" />
+                  Share, then &quot;Add to Home Screen&quot;
+                </li>
               </ol>
             ) : (
               <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-muted">
-                <li>Tap the Share button in Safari&apos;s toolbar</li>
+                <li className="flex flex-wrap items-center gap-1">
+                  Tap
+                  <ShareIcon className="inline h-4 w-4 shrink-0 text-foreground" />
+                  Share in Safari&apos;s toolbar
+                </li>
                 <li>Scroll down and tap &quot;Add to Home Screen&quot;</li>
                 <li>Tap &quot;Add&quot; to confirm</li>
               </ol>
@@ -218,6 +236,29 @@ export default function PwaInstallPrompt() {
             >
               Got it
             </button>
+          </div>
+
+          {/* Points at where the Share icon actually lives on real Safari
+              chrome, which this dialog can't touch or highlight directly —
+              bottom toolbar on iPhone, top toolbar (next to the address bar)
+              on iPad. Purely decorative (pointer-events-none) so it never
+              blocks the tap-outside-to-close behavior on the overlay. */}
+          <div
+            className={`pointer-events-none fixed inset-x-0 flex flex-col items-center gap-1 text-white ${isIpadDevice ? "top-3" : "bottom-3"}`}
+          >
+            {isIpadDevice && (
+              <svg viewBox="0 0 24 24" className="h-6 w-6 animate-bounce" fill="currentColor">
+                <path d="M12 4l-7 7h4v9h6v-9h4z" />
+              </svg>
+            )}
+            <span className="rounded-full bg-black/60 px-3 py-1 text-xs font-medium shadow-sm">
+              {isIpadDevice ? "Share is up here, near the address bar" : "Share is down here, in your toolbar"}
+            </span>
+            {!isIpadDevice && (
+              <svg viewBox="0 0 24 24" className="h-6 w-6 animate-bounce" fill="currentColor">
+                <path d="M12 20l7-7h-4V4H9v9H5z" />
+              </svg>
+            )}
           </div>
         </div>
       )}
