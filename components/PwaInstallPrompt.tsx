@@ -26,6 +26,17 @@ function isIos(): boolean {
   return /iphone|ipad|ipod/i.test(navigator.userAgent);
 }
 
+// Every iOS browser (Chrome, Firefox, Edge included) runs on Apple's WebKit
+// under the hood, but "Add to Home Screen" is a Safari-exclusive feature —
+// Apple doesn't expose it to any other iOS browser's UI at all, even though
+// their user-agent strings still match isIos() above. Detected by each
+// browser's own UA token (CriOS/FxiOS/EdgiOS/OPiOS) rather than assuming
+// "Safari" is the default, so a real Safari UA (no such token) falls
+// through correctly.
+function isIosNonSafariBrowser(): boolean {
+  return /CriOS|FxiOS|EdgiOS|OPiOS/i.test(navigator.userAgent);
+}
+
 // Registers the service worker itself (idempotent — NotificationOptIn may
 // have already done this on the Home page) since a registered SW covering
 // start_url is one of Chrome's installability requirements; this banner
@@ -35,6 +46,7 @@ export default function PwaInstallPrompt() {
   const [iosInstructionsOpen, setIosInstructionsOpen] = useState(false);
   const [dismissed, setDismissed] = useState(true);
   const [showIosBanner, setShowIosBanner] = useState(false);
+  const [isIosOtherBrowser, setIsIosOtherBrowser] = useState(false);
   const [notifResult, setNotifResult] = useState<PushSubscribeResult | null>(null);
 
   useEffect(() => {
@@ -59,7 +71,10 @@ export default function PwaInstallPrompt() {
     // lint rule.
     const kickoff = setTimeout(() => {
       setDismissed(localStorage.getItem(DISMISSED_KEY) === "1");
-      if (isIos()) setShowIosBanner(true);
+      if (isIos()) {
+        setShowIosBanner(true);
+        setIsIosOtherBrowser(isIosNonSafariBrowser());
+      }
     }, 0);
 
     return () => {
@@ -164,11 +179,24 @@ export default function PwaInstallPrompt() {
             className="w-full max-w-xs rounded-2xl bg-surface p-5 shadow-sm ring-1 ring-border"
           >
             <p className="text-sm font-medium text-foreground">To install on iPhone/iPad:</p>
-            <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-muted">
-              <li>Tap the Share button in Safari&apos;s toolbar</li>
-              <li>Scroll down and tap &quot;Add to Home Screen&quot;</li>
-              <li>Tap &quot;Add&quot; to confirm</li>
-            </ol>
+            {isIosOtherBrowser ? (
+              // "Add to Home Screen" is a Safari-exclusive feature on iOS —
+              // Apple doesn't expose it to any other browser's UI (Chrome,
+              // Firefox, Edge all run on WebKit but don't get this feature),
+              // so pointing someone at Share → Add to Home Screen here would
+              // send them looking for an option that doesn't exist for them.
+              <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-muted">
+                <li>Tap the ••• or Share icon in this browser</li>
+                <li>Choose &quot;Open in Safari&quot;</li>
+                <li>In Safari, tap the Share button, then &quot;Add to Home Screen&quot;</li>
+              </ol>
+            ) : (
+              <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-muted">
+                <li>Tap the Share button in Safari&apos;s toolbar</li>
+                <li>Scroll down and tap &quot;Add to Home Screen&quot;</li>
+                <li>Tap &quot;Add&quot; to confirm</li>
+              </ol>
+            )}
             {/* Safari has no Push API at all in a regular browser tab —
                 notifications only become available once this is opened from
                 the Home Screen icon, so that's the honest next step to set
