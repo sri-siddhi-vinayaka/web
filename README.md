@@ -22,7 +22,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 1. Create a free Supabase project (staging first if you're setting up a new environment).
 2. Settings → API: copy the Project URL and `anon public` key into `.env.local`.
-3. Migrations in [`supabase/migrations/`](./supabase/migrations) auto-apply to staging on push to `develop` — see [`supabase/README.md`](./supabase/README.md). Production isn't wired up yet; apply manually via its SQL Editor until it is.
+3. Migrations in [`supabase/migrations/`](./supabase/migrations) auto-apply to staging on push to `develop`, and to production on push to `main` — see [`supabase/README.md`](./supabase/README.md), including the one-time steps for standing up the production project itself.
 4. Never put the **service role** key in a `NEXT_PUBLIC_*` var — it belongs only in server-side env vars for admin routes, never committed.
 
 ## Scripts

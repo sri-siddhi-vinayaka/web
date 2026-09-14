@@ -5,21 +5,54 @@ Versioned SQL migrations for the Supabase Postgres schema. No ORM — plain
 
 ## Applying a migration
 
-Pushing to `develop` with new files under `supabase/migrations/` triggers
-`.github/workflows/deploy-migrations.yml`, which runs `supabase db push`
-against the staging project automatically — no manual SQL Editor step.
-
-Production isn't wired up yet (see the workflow file's comment for how to
-add it once a production Supabase project exists) — until then, apply a
-migration to production manually via its SQL Editor when promoting a
-`develop → main` release, the same way this repo did before automation
-existed.
+Pushing to `develop` or `main` with new files under `supabase/migrations/`
+triggers `.github/workflows/deploy-migrations.yml`, which runs
+`supabase db push` against the staging or production project
+automatically — no manual SQL Editor step, for either environment.
 
 Requires a `staging` GitHub Environment (Settings → Environments) holding
 `SUPABASE_ACCESS_TOKEN` + `SUPABASE_STAGING_DB_PASSWORD` as secrets and
-`SUPABASE_STAGING_PROJECT_REF` as a variable — see the workflow file's
-comment. If that isn't set up yet, fall back to pasting each unapplied file
-into the Supabase SQL Editor by hand, in filename order.
+`SUPABASE_STAGING_PROJECT_REF` as a variable, and a `production` one holding
+`SUPABASE_PRODUCTION_DB_PASSWORD` as a secret and
+`SUPABASE_PRODUCTION_PROJECT_REF` + `SUPABASE_PRODUCTION_POOLER_HOST` as
+variables — see the workflow file's comment for exactly where each value
+comes from in the Supabase dashboard. If an Environment isn't set up yet,
+fall back to pasting each unapplied file into that project's Supabase SQL
+Editor by hand, in filename order.
+
+### Setting up the production Supabase project for the first time
+
+1. Create a new Supabase project (free tier) for production — separate from
+   the staging one. Its schema starts empty; don't run anything by hand yet
+   — step 6 applies every migration to it via the same `db push` the
+   workflow uses for staging, so it's tracked in the CLI's migration
+   history table from the very first migration onward (no
+   `migration repair` step needed, unlike staging — see the workflow
+   file's comment on `push-production`).
+2. Project Settings → Database → Connection pooling: copy the pooler host
+   (e.g. `aws-0-us-east-1.pooler.supabase.com`) and the database password
+   you set when creating the project.
+3. Project Settings → API: copy the Project URL, `anon public` key, and
+   `service_role` key. In the same Data API settings, turn off
+   "Automatically expose new tables" — staging has this off deliberately
+   (see the Conventions section below); leaving it on for production would
+   make the two environments behave differently for every future table.
+4. GitHub → repo Settings → Environments → New environment, named
+   `production`, restricted to deploys from `main`. Add
+   `SUPABASE_PRODUCTION_DB_PASSWORD` as a secret, and
+   `SUPABASE_PRODUCTION_PROJECT_REF` + `SUPABASE_PRODUCTION_POOLER_HOST` as
+   variables.
+5. Vercel → the production deployment's environment variables (Production
+   environment only, not Preview): set `NEXT_PUBLIC_SUPABASE_URL`,
+   `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` to this
+   new project's values — never the staging project's.
+6. Merge this repo's `develop → main` (or re-run
+   "Deploy database migrations" via Actions → workflow_dispatch once the
+   Environment above exists) to apply every migration to the new project
+   in one go.
+
+Steps 1-5 need this project's own dashboard/account access, so they're not
+something this repo's automation can do on its own.
 
 ## Conventions
 
