@@ -37,6 +37,18 @@ export const metadata: Metadata = {
     title: SITE_NAME,
     statusBarStyle: "black-translucent",
   },
+  // `appleWebApp.capable` (above) only renders the modern unprefixed
+  // "mobile-web-app-capable" meta tag as of Next 16.3.0 (verified against
+  // node_modules/next/dist/lib/metadata/metadata.js, not assumed) — Safari
+  // still requires this legacy vendor-prefixed one to actually launch a
+  // home-screen icon standalone. Without it, "Add to Home Screen" still
+  // creates an icon, but tapping it opens a regular Safari tab (address bar
+  // and all) instead of a full-screen app, which reads as "the install
+  // didn't work." `other` is the documented escape hatch for a meta tag the
+  // typed Metadata API doesn't cover.
+  other: {
+    "apple-mobile-web-app-capable": "yes",
+  },
 };
 
 // themeColor lives here, not in `metadata` above — deprecated there since
