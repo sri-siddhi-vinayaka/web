@@ -12,7 +12,13 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
 
-const DISMISSED_KEY = "pwa-install-dismissed";
+// Versioned (v2, not "pwa-install-dismissed") to invalidate every stale
+// dismissal set before the "Got it" button stopped permanently hiding this
+// banner — testers who saw the old, broken behavior would otherwise carry a
+// dismissed flag on their phone forever, with a plain refresh (or even a new
+// deploy) never clearing localStorage on its own. Bump again if this banner
+// ever needs a second clean slate.
+const DISMISSED_KEY = "pwa-install-dismissed-v2";
 
 function isStandalone(): boolean {
   return (
