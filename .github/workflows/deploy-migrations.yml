@@ -1,0 +1,147 @@
+name: Deploy database migrations
+
+# Pushes supabase/migrations/*.sql to the staging and production Supabase
+# projects whenever they change on develop/main respectively, via the
+# official Supabase CLI (`supabase db push`) rather than a hand-rolled psql
+# script — one less thing this volunteer project has to maintain itself.
+#
+# The "staging" GitHub Environment (Settings -> Environments) holds
+# SUPABASE_STAGING_DB_PASSWORD as a secret and SUPABASE_STAGING_PROJECT_REF
+# as a variable, restricted to deploy only from the develop branch — an
+# extra guarantee on top of this workflow's own `on: push: branches:
+# [develop]`. SUPABASE_ACCESS_TOKEN also lives there but is unused by this
+# workflow now (see the --db-url comment below) — left in place in case a
+# future step needs the Management API.
+#
+# The "production" Environment mirrors it for the production project:
+# SUPABASE_PRODUCTION_DB_PASSWORD (secret), SUPABASE_PRODUCTION_PROJECT_REF
+# (variable), and SUPABASE_PRODUCTION_POOLER_HOST (variable) — the full
+# pooler host Supabase's dashboard shows for that project (Project Settings
+# -> Database -> Connection pooling), e.g.
+# "aws-0-us-east-1.pooler.supabase.com". Kept as its own variable instead of
+# composed from a region, unlike the hardcoded staging host below, so
+# nothing here has to guess at production's region or cloud provider ahead
+# of that project actually existing. Deploy-restrict this Environment to
+# main the same way staging is restricted to develop.
+#
+# The "production" Environment doesn't exist yet as of this workflow
+# change — GitHub auto-creates an Environment the first time a job
+# references it, but with none of the variables/secrets above configured.
+# Until someone adds them under Settings -> Environments, a push to main
+# touching supabase/migrations/** will run push-production and it will
+# fail loudly (an empty project ref/password in the db-url), not silently
+# skip — same fail-loud posture as lib/supabase.ts in production. That's
+# the intended state until the production Supabase project actually exists
+# and those values are filled in.
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - "supabase/migrations/**"
+  workflow_dispatch:
+
+jobs:
+  push-staging:
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # `supabase link` calls a broader Management API surface than this
+      # workflow's deliberately narrow-scoped access token (or possibly the
+      # project's plan) allows — it failed with "Your account does not have
+      # the necessary privileges to access this endpoint" even though the
+      # token has exactly what Migrations/db push itself needs. `--db-url`
+      # sidesteps `link` (and the access token) entirely: it's a direct
+      # Postgres connection using only the DB password, which is all
+      # `db push` actually needs to apply migrations.
+      #
+      # The direct connection host (db.<ref>.supabase.co) is IPv6-first and
+      # GitHub-hosted runners can't reach it — that attempt failed with
+      # ECONNREFUSED on an IPv6 address. Routing through Supabase's pooler
+      # instead (built for exactly this: CI runners, serverless, anything
+      # without a predictable/IPv4 source) fixes that. Session mode (5432),
+      # not transaction mode (6543) — Supabase recommends session mode
+      # specifically for migrations and other one-off tools, since
+      # transaction-mode pooling doesn't reliably support everything a
+      # schema migration might need. Note the pooler's username is
+      # `postgres.<ref>`, not just `postgres` — that's what lets one shared
+      # pooler host route to the right project's database.
+      #
+      # us-east-1 is this staging project's region (Project Settings ->
+      # General) — hardcoded rather than a variable since staging is the
+      # only project this job ever points at. The production job below
+      # takes its pooler host as a variable instead, since that project's
+      # region isn't known ahead of it existing.
+      #
+      # 20260809032937 through 20260911235445 (0001-0004, before this
+      # renaming/CI automation existed) were applied by hand via the SQL
+      # Editor early in this project's life — the CLI's own migration
+      # history table never recorded that, so a plain `db push` tries to
+      # reapply them from scratch and fails with "relation already exists".
+      # `migration repair --status applied` reconciles that history without
+      # re-running any SQL. Safe to leave permanently: repairing a version
+      # that's already marked applied is a no-op, and every migration from
+      # 20260912000000 onward was always meant to go through this pipeline,
+      # so it needs no repair.
+      - name: Reconcile pre-CI-managed migration history
+        run: |
+          supabase migration repair --status applied \
+            20260809032937 20260911022120 20260911195318 20260911235445 \
+            --db-url "postgresql://postgres.${SUPABASE_PROJECT_REF}:${SUPABASE_DB_PASSWORD}@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_STAGING_DB_PASSWORD }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
+
+      # --include-all: independent feature branches each get their own
+      # migration file timestamped when the branch was created, but PRs get
+      # reviewed and merged in whatever order looks good on preview, not
+      # necessarily that creation order. That routinely produces a new
+      # migration whose timestamp sorts *before* one already applied to
+      # staging — the CLI refuses to apply it without this flag, treating
+      # it as a likely mistake (an old file accidentally left out). Here
+      # it's the expected case, not a mistake: every migration in this repo
+      # is additive to its own new table, never a dependent follow-up to
+      # another one, so applying them out of relative order is safe. First
+      # hit this with 20260913040000_seed_festival_schedule.sql landing
+      # after 20260913050000_suggestions.sql was already applied, because
+      # the suggestion box PR got reviewed and merged first.
+      - name: Push migrations to staging
+        run: |
+          supabase db push --yes --include-all --db-url "postgresql://postgres.${SUPABASE_PROJECT_REF}:${SUPABASE_DB_PASSWORD}@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_STAGING_DB_PASSWORD }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
+
+  push-production:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # No "reconcile pre-CI-managed migration history" step here, unlike
+      # staging — that step exists only because staging had migrations
+      # applied by hand via the SQL Editor before this pipeline existed.
+      # Once the production project exists and every migration up to that
+      # point is applied through it from the start, `db push` alone can
+      # apply the full history cleanly with nothing to reconcile. If
+      # production ever needs a manual SQL Editor fix outside this
+      # pipeline before it's fully cut over, add the equivalent repair step
+      # here first — same reasoning as the staging step above.
+      - name: Push migrations to production
+        run: |
+          supabase db push --yes --db-url "postgresql://postgres.${SUPABASE_PROJECT_REF}:${SUPABASE_DB_PASSWORD}@${SUPABASE_POOLER_HOST}:5432/postgres"
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_PRODUCTION_DB_PASSWORD }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
+          SUPABASE_POOLER_HOST: ${{ vars.SUPABASE_PRODUCTION_POOLER_HOST }}

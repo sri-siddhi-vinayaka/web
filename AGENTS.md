@@ -60,6 +60,7 @@ Client islands in this app, and nothing more:
 - registration form (form state + submit)
 - live registration count (Supabase Realtime subscription)
 - live darshan embed (iframe wrapper)
+- notification opt-in (service worker registration + Push API)
 
 Everything else — home shell, schedule, contact, announcements, gallery grid —
 stays a Server Component so it prerenders to the CDN and costs no compute.
@@ -74,10 +75,38 @@ policies are the entire security boundary.**
   its policies **in the same migration**. A table without RLS is a data breach,
   not a TODO.
 - `events`, `announcements`, `gallery_items`: public `select`, admin-only write.
-- `registrations`: public `insert` only. **No public `select`** — reading it
-  would expose every registrant's name and phone number to anyone with the
-  anon key. Read/update/delete are admin-only.
-- Migrations are versioned files under `infra/`. Apply to staging first.
+- `food_registrations`: public `insert` only. `registrations` (Pooja) has
+  **no public insert policy at all** — writes go exclusively through the
+  `register_for_event(event_id, name, phone, adult_count, child_count)`
+  SECURITY DEFINER RPC. Every sign-up lands as `status = 'pending'` —
+  nothing auto-confirms a spot; admin reviews each one from `/admin` and
+  manually moves it to `confirmed` or `waitlisted`. A raw insert policy
+  would let a caller bypass that by writing `status='confirmed'` directly.
+  Neither table has a public `select` on the table itself — reading either
+  would expose every registrant's/volunteer's phone number (required for
+  Pooja, optional for Food, but never public either way) to anyone with the
+  anon key.
+  Read/update/delete are admin-only. Two narrow, deliberate exceptions
+  expose non-PII columns via a SECURITY DEFINER RPC, never a raw select
+  policy: `claimed_dishes(event_id)` (dish name only — duplicate dishes are
+  fine on purpose, no need to check first) and `registered_details(event_id)`
+  (name + adult/child counts, confirmed ones only, publicly visible by
+  design — "who's secured this day" — but never phone numbers). Follow
+  this same pattern for future public-but-scoped reads or writes; never
+  widen the table's own
+  select policy instead.
+- `push_subscriptions`: public `insert` only, no public `select` — only
+  `lib/webpush.ts` (service role) reads it, to send notifications. Since
+  `endpoint` is attacker-reachable and later used server-side to make an
+  HTTP request to it, treat any new column read directly into an outbound
+  request the same way: validate against a hardcoded allowlist right
+  before the request, not just at insert time — an unvalidated URL there
+  is SSRF, not just a data-integrity problem.
+- Migrations are versioned files under `supabase/migrations/` (CLI
+  timestamp-prefixed naming). Pushing to `develop` auto-applies new ones to
+  staging via `.github/workflows/deploy-migrations.yml` — see
+  `supabase/README.md`. Production isn't wired up yet; apply manually via
+  its SQL Editor when promoting a release until it is.
 
 Admin auth for MVP is a single shared password gating `/admin`. Treat it as
 what it is: a speed bump, not authentication. Never put anything behind it that
@@ -90,6 +119,13 @@ public by design and belongs in `NEXT_PUBLIC_SUPABASE_ANON_KEY`. The
 **service role** key bypasses RLS entirely — it must never appear in a
 `NEXT_PUBLIC_*` var, a Client Component, or a committed file. `.env*` is
 gitignored; keep it that way.
+
+`RESEND_API_KEY` / `ADMIN_ALERT_EMAIL` (see `lib/notify.ts`) are optional
+and server-only — a new Pooja registration still works with neither set,
+it just doesn't email admin (fail-soft, same posture as everything else
+here). Resend specifically, not an SMS provider: its free tier is
+genuinely free indefinitely; every SMS API charges per message with no
+real free tier, a hard no under this project's $0 budget.
 
 ## Design tokens
 
@@ -114,8 +150,10 @@ These are deliberate product decisions, not gaps to helpfully fill:
 - **User accounts / OTP login / "my registrations".** Excluded from the roadmap
   entirely to keep registration frictionless. If lookup is ever needed, it's a
   query by phone number — not a session.
-- **Payments.** Donations are coordinated off-app via a named contact's phone
-  number. No gateway, no UPI intent, no PCI surface.
+- **Payments / donations.** Removed from the app entirely (no `/donate`
+  page, no contact-info section, no `NAV_LINKS` entry) — donations are
+  coordinated fully outside it. If ever revisited: still off-app by phone
+  only, no gateway, no UPI intent, no PCI surface.
 - **Native app, multi-language.** Out of scope for now. Multi-language was
   explored for `/about-ganesha` (English/Telugu/Hindi/Kannada/Marathi/
   Gujarati/Tamil, page-wide selector so the whole page switches consistently

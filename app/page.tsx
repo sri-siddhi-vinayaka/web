@@ -2,8 +2,10 @@ import Link from "next/link";
 import type { ComponentType } from "react";
 import CountdownTimer from "@/components/CountdownTimer";
 import GaneshaPhoto from "@/components/GaneshaPhoto";
+import NotificationOptIn from "@/components/NotificationOptIn";
+import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 import ScrollIcon from "@/components/icons/ScrollIcon";
-import ClipboardIcon from "@/components/icons/ClipboardIcon";
+import CalendarIcon from "@/components/icons/CalendarIcon";
 import { getEvents, getTodayHighlights } from "@/lib/events";
 import { FESTIVAL_END, FESTIVAL_START, VENUE_MAPS_URL } from "@/lib/config";
 
@@ -20,13 +22,30 @@ function formatTime(iso: string): string {
   });
 }
 
+function formatDay(date: Date): string {
+  return date.toLocaleDateString("en-US", {
+    timeZone: "America/New_York",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+// FESTIVAL_END is an exclusive upper bound (see its comment in lib/config.ts)
+// — the festival's actual last day is one day before it.
+const FESTIVAL_LAST_DAY = new Date(FESTIVAL_END.getTime() - 24 * 60 * 60 * 1000);
+
 // "Mythology" (and its /mythology route) removed for now — out of scope,
 // revisit later. 32 forms + mantras still live on /about-ganesha. ScrollIcon
 // (not VinayakaIcon, already the header logo just above) keeps this tile
 // visually distinct from the brand mark sitting right on top of it.
+//
+// One "Schedule" tile, not separate Pooja/Food Registration tiles — the
+// schedule page is where visitors pick a day and register for either from
+// there (see app/schedule/page.tsx), so this only needs to get them to
+// that one entry point.
 const QUICK_LINKS: { href: string; label: string; Icon: ComponentType<{ className?: string }> }[] = [
   { href: "/about-ganesha", label: "About Ganesha", Icon: ScrollIcon },
-  { href: "/schedule", label: "Pooja Registration", Icon: ClipboardIcon },
+  { href: "/schedule", label: "Schedule", Icon: CalendarIcon },
 ];
 
 export default async function Home() {
@@ -47,7 +66,7 @@ export default async function Home() {
 
         <p className="max-w-md text-left text-base text-muted">
           Welcome! Every year we bring the community together to celebrate
-          Ganesh Chaturthi with pooja, cultural programs, and community
+          Ganesh Chaturthi with pooja, fun events, and community
           spirit. This site is your guide to the celebration — browse the
           schedule, register for events, watch live darshan, and stay
           updated, all in one place.
@@ -58,14 +77,14 @@ export default async function Home() {
         />
       </section>
 
-      <section className="mx-auto grid w-full max-w-3xl grid-cols-2 gap-3">
+      <section className="mx-auto grid w-full max-w-sm grid-cols-2 gap-2">
         {QUICK_LINKS.map(({ href, label, Icon }) => (
           <Link
             key={href}
             href={href}
-            className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl bg-surface p-3 text-center shadow-sm ring-1 ring-border transition-colors hover:bg-surface-muted"
+            className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl bg-surface p-2 text-center shadow-sm ring-1 ring-border transition-colors hover:bg-surface-muted"
           >
-            <Icon className="h-7 w-7 text-brand" />
+            <Icon className="h-6 w-6 text-brand" />
             <span className="text-xs font-medium text-foreground">{label}</span>
           </Link>
         ))}
@@ -77,12 +96,7 @@ export default async function Home() {
         </h2>
         {highlights.length === 0 ? (
           <p className="mt-2 text-sm text-muted">
-            The full day-by-day schedule is being finalized — check back here or
-            the{" "}
-            <Link href="/schedule" className="font-medium text-primary underline underline-offset-2">
-              schedule page
-            </Link>{" "}
-            soon.
+            The full day-by-day schedule is being finalized — check back soon.
           </p>
         ) : (
           <ul className="mt-3 flex flex-col gap-2">
@@ -97,13 +111,28 @@ export default async function Home() {
         )}
       </section>
 
+      <PwaInstallPrompt />
+      <NotificationOptIn />
+
       <section className="mx-auto w-full max-w-3xl rounded-2xl bg-surface p-6 text-center shadow-sm ring-1 ring-border">
         <h2 className="text-lg font-semibold text-foreground">We&apos;d Love to See You</h2>
-        <p className="mt-2 text-sm text-muted">
-          A question, a helping hand, or just a moment for Ganpati&apos;s
-          blessings — whatever brings you here, there&apos;s a place for you.
-          Swing by the venue, or send us a note.
-        </p>
+        {/* Left-aligned, width-constrained like the hero welcome paragraph
+            above (max-w-md text-left) — centered text.muted ragged-wraps
+            unevenly across two stacked sentences; this keeps a straight
+            left edge instead, while the heading/buttons around it stay
+            centered with the rest of this section. */}
+        <div className="mx-auto mt-2 flex max-w-md flex-col gap-2 text-left">
+          <p className="text-sm text-muted">
+            A question, a helping hand, or just a moment for Ganpati&apos;s
+            blessings — whatever brings you here, there&apos;s a place for you.
+            Swing by the venue, or send us a note.
+          </p>
+          <p className="text-sm text-muted">
+            Darshan is walk-in, any time — no registration, no headcount —
+            from Ganesh Sthapana ({formatDay(FESTIVAL_START)}) through the
+            Ladoo celebration ({formatDay(FESTIVAL_LAST_DAY)}).
+          </p>
+        </div>
         <div className="mt-4 flex flex-wrap justify-center gap-3">
           <Link
             href="/contact"

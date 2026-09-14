@@ -82,6 +82,17 @@ function calendarDateKey(date: Date): string {
   return date.toLocaleDateString("en-CA", { timeZone: FESTIVAL_TIME_ZONE });
 }
 
+// Live Darshan only streams on Day 1 (Ganesh Sthapana, FESTIVAL_START's
+// calendar date) — once that ET calendar day is over, the stream itself is
+// done, so /live stops being a separate page, its nav link and schedule
+// link disappear, and the recording surfaces instead as the current year's
+// section on the Gallery page. Comparing calendar-date strings (not raw
+// Date math) keeps this correct across the EDT/EST transition, same
+// reasoning as calendarDateKey above.
+export function isLiveDarshanActive(now: Date = new Date()): boolean {
+  return calendarDateKey(now) <= calendarDateKey(FESTIVAL_START);
+}
+
 export function getTodayHighlights(events: EventItem[], now: Date = new Date()): EventItem[] {
   const dayNumber =
     Math.round(
@@ -91,6 +102,44 @@ export function getTodayHighlights(events: EventItem[], now: Date = new Date()):
     ) + 1;
 
   return events.filter((event) => event.day_number === dayNumber);
+}
+
+// getEvents() orders by day_number then start_time, so the first event seen
+// for a given day_number is that day's earliest — a reasonable stand-in for
+// "the day" itself, since there's no separate festival-days table. Used by
+// both registration flows, which register per-day rather than per-pooja.
+export function dedupeByDay(events: EventItem[]): EventItem[] {
+  const seenDays = new Set<number>();
+  return events.filter((event) => {
+    if (seenDays.has(event.day_number)) return false;
+    seenDays.add(event.day_number);
+    return true;
+  });
+}
+
+// Registration only makes sense for today or a day still ahead — a day that
+// already happened isn't worth showing, let alone registering for.
+export function getUpcomingDays(days: EventItem[], now: Date = new Date()): EventItem[] {
+  const todayKey = calendarDateKey(now);
+  return days.filter((day) => calendarDateKey(new Date(day.start_time)) >= todayKey);
+}
+
+// The festival's first and last days (Ganesh Sthapana and the final
+// pooja/Ladoo celebration) have their Pooja itself run entirely by the
+// admin team — no public sign-up for that specific ritual on either day.
+// Food registration has no such restriction (see FoodRegistrationPage,
+// which doesn't call this at all) — both days now take food sign-ups too.
+// First/last are derived structurally (min/max day_number across every
+// day, not just the upcoming ones) so this stays correct even once day 1
+// itself is in the past and getUpcomingDays would otherwise have already
+// dropped it from view. Callers should pass the full deduped day list here
+// before narrowing to upcoming days.
+export function getPoojaRegistrableDays(days: EventItem[]): EventItem[] {
+  if (days.length === 0) return days;
+  const dayNumbers = days.map((day) => day.day_number);
+  const first = Math.min(...dayNumbers);
+  const last = Math.max(...dayNumbers);
+  return days.filter((day) => day.day_number !== first && day.day_number !== last);
 }
 
 export async function getAnnouncements(): Promise<Announcement[]> {
@@ -134,7 +183,7 @@ export async function getGalleryItems(): Promise<GalleryItem[]> {
 }
 
 // Deliberately goes through the `registration_count` RPC (see
-// infra/migrations/0002_registration_count_broadcast.sql) rather than
+// supabase/migrations/20260911022120_registration_count_broadcast.sql) rather than
 // `select count(*) from registrations` — there is no public SELECT policy on
 // registrations (it holds every registrant's name and phone number), so a
 // direct count query would be blocked by RLS. The RPC is a SECURITY DEFINER
@@ -155,3 +204,33 @@ export async function getRegistrationCount(eventId: string): Promise<number> {
     return logAndFallback("getRegistrationCount", e as { message: string }, 0);
   }
 }
+
+export type RegisteredDetail = { name: string; adult_count: number; child_count: number };
+
+// Name + adult/child breakdown (never phone numbers) are deliberately
+// public per day — visitors can see who's already registered and how many
+// people, the same way the Food flow shows claimed dishes. Goes through
+// the registered_details() RPC (see
+// supabase/migrations/20260913020000_adult_child_optional_phone_food_size.sql):
+// registrations still has no public SELECT policy, so phone numbers stay
+// unreachable — this SECURITY DEFINER function returns only these columns.
+export async function getRegisteredDetails(eventId: string): Promise<RegisteredDetail[]> {
+  if (!isSupabaseConfigured) return [];
+
+  try {
+    const { data, error } = await withTimeout(
+      supabase.rpc("registered_details", { p_event_id: eventId }) as unknown as Promise<{
+        data: RegisteredDetail[] | null;
+        error: { message: string } | null;
+      }>,
+      800,
+      "getRegisteredDetails"
+    );
+
+    if (error) return logAndFallback("getRegisteredDetails", error, []);
+    return data ?? [];
+  } catch (e) {
+    return logAndFallback("getRegisteredDetails", e as { message: string }, []);
+  }
+}
+
