@@ -204,12 +204,16 @@ export default function PwaInstallPrompt() {
             <p className="mt-2 text-sm text-muted">
               Then open it from your Home Screen — that&apos;s where you&apos;ll be able to turn on notifications too.
             </p>
+            {/* Deliberately doesn't call dismiss() — closing this dialog
+                means "I read the steps," not "leave me alone forever," and
+                conflating the two is exactly what silently hid this banner
+                for anyone who saw it before this component's iOS fixes
+                shipped, with no way back short of clearing site data.
+                Actually installing already hides this banner correctly, via
+                isStandalone() at the top of this component's effect. */}
             <button
               type="button"
-              onClick={() => {
-                setIosInstructionsOpen(false);
-                dismiss();
-              }}
+              onClick={() => setIosInstructionsOpen(false)}
               className="mt-4 min-h-11 w-full rounded-lg bg-surface-muted px-4 py-2 text-sm font-medium text-foreground ring-1 ring-border transition-colors hover:bg-border"
             >
               Got it
