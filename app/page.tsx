@@ -2,11 +2,12 @@ import Link from "next/link";
 import type { ComponentType } from "react";
 import CountdownTimer from "@/components/CountdownTimer";
 import GaneshaPhoto from "@/components/GaneshaPhoto";
+import LiveDarshanHighlight from "@/components/LiveDarshanHighlight";
 import NotificationOptIn from "@/components/NotificationOptIn";
 import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 import ScrollIcon from "@/components/icons/ScrollIcon";
 import CalendarIcon from "@/components/icons/CalendarIcon";
-import { getEvents, getTodayHighlights } from "@/lib/events";
+import { getEvents, getTodayHighlights, isLiveDarshanActive } from "@/lib/events";
 import { FESTIVAL_END, FESTIVAL_START, VENUE_MAPS_URL } from "@/lib/config";
 
 // "Today's highlights" must roll over with the calendar date on its own, with
@@ -102,6 +103,11 @@ export default async function Home() {
         <h2 className="text-lg font-semibold text-foreground">
           Today&apos;s highlights
         </h2>
+        {isLiveDarshanActive() && (
+          <div className="mt-3">
+            <LiveDarshanHighlight />
+          </div>
+        )}
         {highlights.length === 0 ? (
           <p className="mt-2 text-sm text-muted">
             The full day-by-day schedule is being finalized — check back soon.
