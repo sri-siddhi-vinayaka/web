@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ComponentType } from "react";
 import CountdownTimer from "@/components/CountdownTimer";
 import GaneshaPhoto from "@/components/GaneshaPhoto";
+import InstagramReelHighlight from "@/components/InstagramReelHighlight";
 import LiveDarshanHighlight from "@/components/LiveDarshanHighlight";
 import NotificationOptIn from "@/components/NotificationOptIn";
 import PwaInstallPrompt from "@/components/PwaInstallPrompt";
@@ -84,6 +85,14 @@ export default async function Home() {
           start={liveDarshanStart}
           end={FESTIVAL_END.toISOString()}
         />
+      </section>
+
+      {/* Right after the hero — first-fold real estate on mobile — but just
+          one button's worth of space, same footprint as LiveDarshanHighlight
+          below: a popup, not an inline embed, so it doesn't push the rest
+          of the page down for visitors who don't tap it. */}
+      <section className="mx-auto w-full max-w-sm">
+        <InstagramReelHighlight />
       </section>
 
       <section className="mx-auto grid w-full max-w-sm grid-cols-2 gap-2">
