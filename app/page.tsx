@@ -9,7 +9,7 @@ import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 import ScrollIcon from "@/components/icons/ScrollIcon";
 import CalendarIcon from "@/components/icons/CalendarIcon";
 import { getEvents, getTodayHighlights, isLiveDarshanActive } from "@/lib/events";
-import { FESTIVAL_END, FESTIVAL_START, VENUE_MAPS_URL } from "@/lib/config";
+import { FESTIVAL_END, FESTIVAL_START, VENUE_ADDRESS, VENUE_MAPS_URL } from "@/lib/config";
 
 // "Today's highlights" must roll over with the calendar date on its own, with
 // no admin action to hang a revalidation off — static prerendering would
@@ -45,6 +45,9 @@ const FESTIVAL_LAST_DAY = new Date(FESTIVAL_END.getTime() - 24 * 60 * 60 * 1000)
 // schedule page is where visitors pick a day and register for either from
 // there (see app/schedule/page.tsx), so this only needs to get them to
 // that one entry point.
+//
+// No Contact Us tile here (yet) — there's no dedicated email/Instagram
+// account to point it at yet either; revisit once that exists.
 const QUICK_LINKS: { href: string; label: string; Icon: ComponentType<{ className?: string }> }[] = [
   { href: "/about-ganesha", label: "About Ganesha", Icon: ScrollIcon },
   { href: "/schedule", label: "Schedule", Icon: CalendarIcon },
@@ -132,6 +135,22 @@ export default async function Home() {
             ))}
           </ul>
         )}
+        {/* Whoever's checking this section is plausibly on their way, so the
+            venue belongs right here rather than only in the closing section
+            further down the page — the most useful place for it. After the
+            highlights themselves, not before: what's happening today is
+            what someone opens this section to see first. */}
+        <p className="mt-3 text-sm text-muted">
+          📍 {VENUE_ADDRESS} —{" "}
+          <a
+            href={VENUE_MAPS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-primary underline underline-offset-2"
+          >
+            Get Directions
+          </a>
+        </p>
       </section>
 
       <PwaInstallPrompt />
@@ -155,22 +174,6 @@ export default async function Home() {
             from Ganesh Sthapana ({formatDay(FESTIVAL_START)}) through the
             Ladoo celebration ({formatDay(FESTIVAL_LAST_DAY)}).
           </p>
-        </div>
-        <div className="mt-4 flex flex-wrap justify-center gap-3">
-          <Link
-            href="/contact"
-            className="inline-block min-h-11 rounded-lg bg-surface-muted px-4 py-2 text-sm font-medium text-foreground ring-1 ring-border transition-colors hover:bg-border"
-          >
-            Contact Us
-          </Link>
-          <a
-            href={VENUE_MAPS_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-contrast transition-opacity hover:opacity-90"
-          >
-            Venue
-          </a>
         </div>
       </section>
     </div>
