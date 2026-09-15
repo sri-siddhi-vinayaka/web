@@ -14,9 +14,23 @@ export const FESTIVAL_START = new Date("2026-09-14T00:00:00-04:00");
 export const FESTIVAL_END = new Date("2026-09-26T00:00:00-04:00");
 
 // YouTube Live, starting Day 1 (Ganesh Sthapana & Pooja) — converted to the
-// embeddable /embed/<id> form (not the /live/<id> watch-page URL it was
+// embeddable /embed/<id> form (not the youtu.be/<id> share-link form it was
 // given as) since LiveEmbed puts this straight into an <iframe src>.
-export const LIVE_STREAM_URL = "https://www.youtube.com/embed/EtVEo-m3BcA";
+export const LIVE_STREAM_URL = "https://www.youtube.com/embed/5ujtDMJvzqc";
+
+// Same video as LIVE_STREAM_URL, in its regular watch-page form — for an
+// outbound "watch on YouTube" link (an <iframe> can't be an <a href>)
+// rather than an inline embed. Used next to Day 1's title on the schedule
+// page, which — unlike the "Watch Live Darshan" button further down that
+// same card — stays up once Day 1 is over instead of disappearing with
+// isLiveDarshanActive, since the video itself doesn't go anywhere.
+export const LIVE_STREAM_WATCH_URL = "https://www.youtube.com/watch?v=5ujtDMJvzqc";
+
+// 2026's Instagram Reel highlight — same dual use as LIVE_STREAM_URL above:
+// referenced directly by the home page's InstagramReelHighlight, and by
+// this year's PREVIOUS_YEARS entry below so it also shows up in Gallery,
+// same as every past year's reel.
+export const INSTAGRAM_REEL_URL = "https://www.instagram.com/reel/DdT869oijHB/?stkn=Z3V2aGtzdjhud2t0";
 
 export const VENUE_ADDRESS = "2526 Kilpeck Dr, Henrico, VA";
 export const VENUE_MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(VENUE_ADDRESS)}`;
@@ -41,12 +55,11 @@ export const VENUE_MAPS_URL = `https://www.google.com/maps/search/?api=1&query=$
 // either way; every tile here is click-to-play so five years of embeds are
 // never all live at once on the venue's slow mobile data.
 //
-// Newest year first. instagramUrl is optional for exactly one reason: the
-// current festival's own entry (added below) only has its YouTube recording
-// the moment Live Darshan hands off to Gallery (see isLiveDarshanActive in
-// lib/events.ts) — the Instagram highlight reel goes up later. Add that URL
-// here once the committee has it; until then app/gallery/page.tsx just
-// skips the Instagram tile for a year that doesn't have one yet.
+// Newest year first. instagramUrl is optional — a year can go up with just
+// its YouTube recording the moment Live Darshan hands off to Gallery (see
+// isLiveDarshanActive in lib/events.ts) if the committee doesn't have the
+// Instagram highlight reel yet; app/gallery/page.tsx just skips the
+// Instagram tile for a year that doesn't have one.
 export const PREVIOUS_YEARS: {
   year: number;
   instagramUrl?: string;
@@ -58,6 +71,7 @@ export const PREVIOUS_YEARS: {
     // right embed for "moved to Gallery" with no new link to go find.
     year: FESTIVAL_START.getFullYear(),
     youtubeEmbedUrl: LIVE_STREAM_URL,
+    instagramUrl: INSTAGRAM_REEL_URL,
   },
   {
     year: 2025,
