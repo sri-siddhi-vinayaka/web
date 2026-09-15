@@ -2,8 +2,18 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { requestPushSubscription } from "@/lib/pushClient";
+import { SITE_NAME } from "@/lib/config";
 
 type Status = "checking" | "unsupported" | "unconfigured" | "idle" | "subscribing" | "subscribed" | "denied" | "error";
+
+// iOS keeps web push permission in the Settings app, not in Safari's own UI
+// (Settings > Notifications > the installed app's name) — everything else
+// (Chrome/Edge/Samsung Internet, Android and desktop alike) exposes it from
+// the address bar's site-info icon. Same UA-token approach as isIos() in
+// PwaInstallPrompt.tsx.
+function isIos(): boolean {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
 
 // The one client island for Web Push: registers the service worker (public/sw.js),
 // and on request subscribes the browser via requestPushSubscription()
@@ -26,6 +36,7 @@ export default function NotificationOptIn() {
   const [justSubscribed, setJustSubscribed] = useState(false);
   const [fadingOut, setFadingOut] = useState(false);
   const [rechecking, setRechecking] = useState(false);
+  const [isIosDevice, setIsIosDevice] = useState(false);
 
   // Pulled out of the mount effect so it can also be re-run once a visitor
   // fixes a blocked permission from the browser's own site settings — either
@@ -57,6 +68,13 @@ export default function NotificationOptIn() {
       cancelled = true;
     };
   }, [determineStatus]);
+
+  useEffect(() => {
+    // Deferred the same way PwaInstallPrompt reads its own UA flags — never
+    // synchronously in the effect body itself.
+    const kickoff = setTimeout(() => setIsIosDevice(isIos()), 0);
+    return () => clearTimeout(kickoff);
+  }, []);
 
   // Chrome (desktop and Android) fires "change" on this if the visitor flips
   // the permission in the browser's own site settings, so a blocked visitor
@@ -160,10 +178,21 @@ export default function NotificationOptIn() {
           <p className="text-sm text-muted">You&apos;re all set — you&apos;ll be notified here when something new is posted.</p>
         ) : status === "denied" ? (
           <div className="flex flex-col items-start gap-2">
-            <p className="text-sm text-muted">
-              Notifications are blocked in your browser settings. Open the site settings for this page, set
-              Notifications to Allow, then tap below.
-            </p>
+            <p className="text-sm text-muted">Notifications are blocked. To fix it:</p>
+            {isIosDevice ? (
+              <ol className="list-decimal space-y-1 pl-5 text-sm text-muted">
+                <li>Open the Settings app on your device</li>
+                <li>Tap Notifications</li>
+                <li>Find &quot;{SITE_NAME}&quot; and turn on Allow Notifications</li>
+              </ol>
+            ) : (
+              <ol className="list-decimal space-y-1 pl-5 text-sm text-muted">
+                <li>Tap the icon next to the address bar (usually ⓘ or 🔒)</li>
+                <li>Tap Permissions (or Notifications)</li>
+                <li>Turn on Notifications</li>
+              </ol>
+            )}
+            <p className="text-sm text-muted">Then tap below.</p>
             <button
               type="button"
               onClick={handleCheckAgain}
