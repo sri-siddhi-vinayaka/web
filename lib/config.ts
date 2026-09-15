@@ -16,7 +16,7 @@ export const FESTIVAL_END = new Date("2026-09-26T00:00:00-04:00");
 // YouTube Live, starting Day 1 (Ganesh Sthapana & Pooja) — converted to the
 // embeddable /embed/<id> form (not the /live/<id> watch-page URL it was
 // given as) since LiveEmbed puts this straight into an <iframe src>.
-export const LIVE_STREAM_URL = "https://www.youtube.com/embed/bizFLsnlvZo";
+export const LIVE_STREAM_URL = "https://www.youtube.com/embed/EtVEo-m3BcA";
 
 export const VENUE_ADDRESS = "2526 Kilpeck Dr, Henrico, VA";
 export const VENUE_MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(VENUE_ADDRESS)}`;
