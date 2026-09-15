@@ -1,5 +1,5 @@
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
-import { FESTIVAL_START } from "@/lib/config";
+import { ADMIN_RUN_POOJA_DAY_NUMBERS, FESTIVAL_START } from "@/lib/config";
 import type { Announcement, EventItem, GalleryItem } from "@/types";
 
 // A Supabase hiccup should degrade a page (empty list / zero count), never
@@ -148,19 +148,25 @@ export function orderByRelevance<T extends EventItem>(days: T[], now: Date = new
 // The festival's first and last days (Ganesh Sthapana and the final
 // pooja/Ladoo celebration) have their Pooja itself run entirely by the
 // admin team — no public sign-up for that specific ritual on either day.
-// Food registration has no such restriction (see FoodRegistrationPage,
-// which doesn't call this at all) — both days now take food sign-ups too.
-// First/last are derived structurally (min/max day_number across every
-// day, not just the upcoming ones) so this stays correct even once day 1
-// itself is in the past and getUpcomingDays would otherwise have already
-// dropped it from view. Callers should pass the full deduped day list here
-// before narrowing to upcoming days.
+// ADMIN_RUN_POOJA_DAY_NUMBERS (lib/config.ts) adds any other day the
+// committee designates the same way, e.g. Day 7's Ganapati Homam. Food
+// registration has no such restriction (see FoodRegistrationPage, which
+// doesn't call this at all) — every excluded day still takes food
+// sign-ups. First/last are derived structurally (min/max day_number
+// across every day, not just the upcoming ones) so this stays correct
+// even once day 1 itself is in the past. Callers should pass the full
+// deduped day list here before narrowing to upcoming days.
 export function getPoojaRegistrableDays(days: EventItem[]): EventItem[] {
   if (days.length === 0) return days;
   const dayNumbers = days.map((day) => day.day_number);
   const first = Math.min(...dayNumbers);
   const last = Math.max(...dayNumbers);
-  return days.filter((day) => day.day_number !== first && day.day_number !== last);
+  return days.filter(
+    (day) =>
+      day.day_number !== first &&
+      day.day_number !== last &&
+      !ADMIN_RUN_POOJA_DAY_NUMBERS.includes(day.day_number)
+  );
 }
 
 export async function getAnnouncements(): Promise<Announcement[]> {

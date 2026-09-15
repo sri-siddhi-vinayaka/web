@@ -32,6 +32,14 @@ export const LIVE_STREAM_WATCH_URL = "https://www.youtube.com/watch?v=5ujtDMJvzq
 // same as every past year's reel.
 export const INSTAGRAM_REEL_URL = "https://www.instagram.com/reel/DdT869oijHB/?stkn=Z3V2aGtzdjhud2t0";
 
+// Day numbers whose Pooja ritual is admin-run with no public sign-up, on
+// top of the structural first/last day (Sthapana, Ladoo celebration —
+// see getPoojaRegistrableDays in lib/events.ts, which excludes those two
+// on its own and this list in addition). Day 7 is Ganapati Homam, also
+// entirely admin-run. Food registration is untouched by this — it has no
+// such restriction on any day, this one included.
+export const ADMIN_RUN_POOJA_DAY_NUMBERS: number[] = [7];
+
 export const VENUE_ADDRESS = "2526 Kilpeck Dr, Henrico, VA";
 export const VENUE_MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(VENUE_ADDRESS)}`;
 
