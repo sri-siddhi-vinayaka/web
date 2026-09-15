@@ -114,20 +114,6 @@ export default async function Home() {
         <h2 className="text-lg font-semibold text-foreground">
           Today&apos;s highlights
         </h2>
-        {/* Whoever's checking this section is plausibly on their way, so the
-            venue belongs right here rather than only in the closing section
-            further down the page — the most useful place for it. */}
-        <p className="mt-1 text-sm text-muted">
-          📍 {VENUE_ADDRESS} —{" "}
-          <a
-            href={VENUE_MAPS_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium text-primary underline underline-offset-2"
-          >
-            Get Directions
-          </a>
-        </p>
         {isLiveDarshanActive() && (
           <div className="mt-3">
             <LiveDarshanHighlight />
@@ -148,6 +134,22 @@ export default async function Home() {
             ))}
           </ul>
         )}
+        {/* Whoever's checking this section is plausibly on their way, so the
+            venue belongs right here rather than only in the closing section
+            further down the page — the most useful place for it. After the
+            highlights themselves, not before: what's happening today is
+            what someone opens this section to see first. */}
+        <p className="mt-3 text-sm text-muted">
+          📍 {VENUE_ADDRESS} —{" "}
+          <a
+            href={VENUE_MAPS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-primary underline underline-offset-2"
+          >
+            Get Directions
+          </a>
+        </p>
       </section>
 
       <PwaInstallPrompt />
