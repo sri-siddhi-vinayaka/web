@@ -161,32 +161,50 @@ export default async function SchedulePage() {
                 see who else is going and coordinate with friends — see the
                 privacy notice on /register/pooja. Shown once per day (not
                 per event, same reasoning as the registration links below)
-                and only for days that actually take Pooja sign-ups. */}
-            {dayNumber !== firstDay && dayNumber !== lastDay && (
-              <div className="mt-3">
-                <h3 className="text-xs font-medium text-foreground">Already registered</h3>
-                <div className="mt-1">
-                  <RegisteredDetailsTable
-                    eventId={dayRepresentativeEvent.get(dayNumber)!.id}
-                    initialDetails={detailsByEvent.get(dayRepresentativeEvent.get(dayNumber)!.id) ?? []}
-                  />
-                </div>
-              </div>
-            )}
+                and only for days that actually take Pooja sign-ups. This is
+                an overview page, not the registration flow itself, so an
+                empty day says nothing here rather than nudging with
+                RegisteredDetailsTable's "be the first!" default — that
+                encouragement belongs next to the form on /register/pooja,
+                not repeated down a list of mostly-empty future days. */}
+            {dayNumber !== firstDay && dayNumber !== lastDay && (() => {
+              const details = detailsByEvent.get(dayRepresentativeEvent.get(dayNumber)!.id) ?? [];
+              if (details.length === 0) return null;
 
-            {/* Dish names are public the same way registrant names are (see
-                food_registrations' claimed_dishes() RPC) — every day takes
+              return (
+                <div className="mt-3">
+                  <h3 className="text-xs font-medium text-foreground">Already registered</h3>
+                  <div className="mt-1">
+                    <RegisteredDetailsTable
+                      eventId={dayRepresentativeEvent.get(dayNumber)!.id}
+                      initialDetails={details}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Same reasoning as above, for claimed dishes — dish names are
+                public the same way registrant names are (see
+                food_registrations' claimed_dishes() RPC). Every day takes
                 Food sign-ups, including day 1/12, so unlike the block above
                 this isn't gated to pooja-registrable days. */}
-            <div className="mt-3">
-              <h3 className="text-xs font-medium text-foreground">Dishes already claimed</h3>
-              <div className="mt-1">
-                <ClaimedDishesList
-                  eventId={dayRepresentativeEvent.get(dayNumber)!.id}
-                  initialDishes={dishesByDay.get(dayNumber) ?? []}
-                />
-              </div>
-            </div>
+            {(() => {
+              const dishes = dishesByDay.get(dayNumber) ?? [];
+              if (dishes.length === 0) return null;
+
+              return (
+                <div className="mt-3">
+                  <h3 className="text-xs font-medium text-foreground">Dishes already claimed</h3>
+                  <div className="mt-1">
+                    <ClaimedDishesList
+                      eventId={dayRepresentativeEvent.get(dayNumber)!.id}
+                      initialDishes={dishes}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* One registration link set per day, not per event — a day can
                 carry more than one event (the pooja itself, plus e.g. a
