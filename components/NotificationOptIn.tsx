@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { requestPushSubscription } from "@/lib/pushClient";
 
 type Status = "checking" | "unsupported" | "unconfigured" | "idle" | "subscribing" | "subscribed" | "denied" | "error";
@@ -25,24 +25,25 @@ export default function NotificationOptIn() {
   // visitor who already opted in doesn't see the confirmation replay.
   const [justSubscribed, setJustSubscribed] = useState(false);
   const [fadingOut, setFadingOut] = useState(false);
+  const [rechecking, setRechecking] = useState(false);
+
+  // Pulled out of the mount effect so it can also be re-run once a visitor
+  // fixes a blocked permission from the browser's own site settings — either
+  // detected live (the permissions.query listener below) or via the "Check
+  // again" button that's the fallback where that API isn't supported.
+  const determineStatus = useCallback(async (): Promise<Status> => {
+    const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    if (!publicKey) return "unconfigured";
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return "unsupported";
+    if (Notification.permission === "denied") return "denied";
+
+    const registration = await navigator.serviceWorker.register("/sw.js");
+    const existing = await registration.pushManager.getSubscription();
+    return existing ? "subscribed" : "idle";
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
-
-    // Wrapped in an async function, with setStatus only ever called from
-    // its resolution — not synchronously in the effect body — even the
-    // early, non-await-needing branches (unconfigured/unsupported/denied)
-    // go through this same asynchronous path.
-    async function determineStatus(): Promise<Status> {
-      const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-      if (!publicKey) return "unconfigured";
-      if (!("serviceWorker" in navigator) || !("PushManager" in window)) return "unsupported";
-      if (Notification.permission === "denied") return "denied";
-
-      const registration = await navigator.serviceWorker.register("/sw.js");
-      const existing = await registration.pushManager.getSubscription();
-      return existing ? "subscribed" : "idle";
-    }
 
     determineStatus()
       .then((result) => {
@@ -55,7 +56,41 @@ export default function NotificationOptIn() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [determineStatus]);
+
+  // Chrome (desktop and Android) fires "change" on this if the visitor flips
+  // the permission in the browser's own site settings, so a blocked visitor
+  // gets the "Enable notifications" button back without reloading. Safari
+  // doesn't support querying "notifications" this way — the "Check again"
+  // button in the denied view below is the fallback for it.
+  useEffect(() => {
+    if (!("permissions" in navigator)) return;
+
+    let cancelled = false;
+    let permissionStatus: PermissionStatus | undefined;
+
+    function handleChange() {
+      determineStatus().then((result) => {
+        if (!cancelled) setStatus(result);
+      });
+    }
+
+    navigator.permissions
+      .query({ name: "notifications" as PermissionName })
+      .then((result) => {
+        if (cancelled) return;
+        permissionStatus = result;
+        permissionStatus.addEventListener("change", handleChange);
+      })
+      .catch(() => {
+        // Some browsers don't support this query name — ignore, "Check again" covers it.
+      });
+
+    return () => {
+      cancelled = true;
+      permissionStatus?.removeEventListener("change", handleChange);
+    };
+  }, [determineStatus]);
 
   useEffect(() => {
     if (!justSubscribed) return;
@@ -85,6 +120,21 @@ export default function NotificationOptIn() {
     }
   }
 
+  // Re-runs the same check as mount, for a visitor who fixed a blocked
+  // permission in the browser's own site settings and came back — doesn't
+  // touch Notification.requestPermission(), so no browser will treat this
+  // as a fresh prompt attempt.
+  async function handleCheckAgain() {
+    setRechecking(true);
+    try {
+      setStatus(await determineStatus());
+    } catch {
+      setStatus("error");
+    } finally {
+      setRechecking(false);
+    }
+  }
+
   // Once subscribed there's nothing actionable left to show. A subscription
   // found already in place on mount (a repeat visitor) hides right away; one
   // that just succeeded gets a brief confirmation first (see justSubscribed
@@ -109,12 +159,25 @@ export default function NotificationOptIn() {
         {status === "subscribed" ? (
           <p className="text-sm text-muted">You&apos;re all set — you&apos;ll be notified here when something new is posted.</p>
         ) : status === "denied" ? (
-          <p className="text-sm text-muted">
-            Notifications are blocked in your browser settings — enable them there to get notified about new posts.
-          </p>
+          <div className="flex flex-col items-start gap-2">
+            <p className="text-sm text-muted">
+              Notifications are blocked in your browser settings. Open the site settings for this page, set
+              Notifications to Allow, then tap below.
+            </p>
+            <button
+              type="button"
+              onClick={handleCheckAgain}
+              disabled={rechecking}
+              className="min-h-11 rounded-lg bg-surface-muted px-4 py-2 text-sm font-medium text-foreground ring-1 ring-border transition-colors hover:bg-border disabled:opacity-60"
+            >
+              {rechecking ? "Checking…" : "Check again"}
+            </button>
+          </div>
         ) : (
           <div className="flex flex-col items-start gap-2">
-            <p className="text-sm text-muted">Get notified here when something new is posted.</p>
+            <p className="text-sm text-muted">
+              Get notified here when something new is posted. Your browser will ask permission — tap Allow.
+            </p>
             <button
               type="button"
               onClick={handleEnable}
