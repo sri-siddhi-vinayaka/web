@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import RegisteredDetailsTable from "@/components/RegisteredDetailsTable";
 import RegistrationCount from "@/components/RegistrationCount";
 import {
   dedupeByDay,
@@ -86,16 +87,17 @@ export default async function SchedulePage() {
     )
   );
 
-  // Pooja capacity is per day, not per event row — dedupeByDay picks the
-  // same representative event per day_number that /register/pooja#day-N
-  // actually registers against (see getPoojaRegistrableDays), so capacity
-  // is checked against that event's confirmed registrations rather than
-  // summed across every event on the day. Reuses detailsByEvent above
-  // rather than fetching again.
+  // Pooja registration (and so its capacity and "who's registered" list) is
+  // per day, not per event row — dedupeByDay picks the same representative
+  // event per day_number that /register/pooja#day-N actually registers
+  // against (see getPoojaRegistrableDays), so both are checked against that
+  // one event's confirmed registrations rather than summed across every
+  // event on the day. Reuses detailsByEvent above rather than fetching again.
+  const poojaDayEventByDay = new Map(dedupeByDay(events).map((event) => [event.day_number, event]));
   const poojaCapacityByDay = new Map(
-    dedupeByDay(events)
-      .filter((event) => event.day_number !== firstDay && event.day_number !== lastDay)
-      .map((event) => [event.day_number, getPoojaCapacity(detailsByEvent.get(event.id) ?? [])] as const)
+    [...poojaDayEventByDay.entries()]
+      .filter(([dayNumber]) => dayNumber !== firstDay && dayNumber !== lastDay)
+      .map(([dayNumber, event]) => [dayNumber, getPoojaCapacity(detailsByEvent.get(event.id) ?? [])] as const)
   );
 
   return (
@@ -126,6 +128,23 @@ export default async function SchedulePage() {
                 </li>
               ))}
             </ul>
+
+            {/* Names are public once confirmed specifically so people can
+                see who else is going and coordinate with friends — see the
+                privacy notice on /register/pooja. Shown once per day (not
+                per event, same reasoning as the registration links below)
+                and only for days that actually take Pooja sign-ups. */}
+            {dayNumber !== firstDay && dayNumber !== lastDay && (
+              <div className="mt-3">
+                <h3 className="text-xs font-medium text-foreground">Already registered</h3>
+                <div className="mt-1">
+                  <RegisteredDetailsTable
+                    eventId={poojaDayEventByDay.get(dayNumber)!.id}
+                    initialDetails={detailsByEvent.get(poojaDayEventByDay.get(dayNumber)!.id) ?? []}
+                  />
+                </div>
+              </div>
+            )}
 
             {/* One registration link set per day, not per event — a day can
                 carry more than one event (the pooja itself, plus e.g. a
