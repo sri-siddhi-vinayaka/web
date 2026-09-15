@@ -18,6 +18,12 @@ export const FESTIVAL_END = new Date("2026-09-26T00:00:00-04:00");
 // given as) since LiveEmbed puts this straight into an <iframe src>.
 export const LIVE_STREAM_URL = "https://www.youtube.com/embed/EtVEo-m3BcA";
 
+// 2026's Instagram Reel highlight — same dual use as LIVE_STREAM_URL above:
+// referenced directly by the home page's InstagramReelHighlight, and by
+// this year's PREVIOUS_YEARS entry below so it also shows up in Gallery,
+// same as every past year's reel.
+export const INSTAGRAM_REEL_URL = "https://www.instagram.com/reel/DdT869oijHB/?stkn=Z3V2aGtzdjhud2t0";
+
 export const VENUE_ADDRESS = "2526 Kilpeck Dr, Henrico, VA";
 export const VENUE_MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(VENUE_ADDRESS)}`;
 
@@ -41,12 +47,11 @@ export const VENUE_MAPS_URL = `https://www.google.com/maps/search/?api=1&query=$
 // either way; every tile here is click-to-play so five years of embeds are
 // never all live at once on the venue's slow mobile data.
 //
-// Newest year first. instagramUrl is optional for exactly one reason: the
-// current festival's own entry (added below) only has its YouTube recording
-// the moment Live Darshan hands off to Gallery (see isLiveDarshanActive in
-// lib/events.ts) — the Instagram highlight reel goes up later. Add that URL
-// here once the committee has it; until then app/gallery/page.tsx just
-// skips the Instagram tile for a year that doesn't have one yet.
+// Newest year first. instagramUrl is optional — a year can go up with just
+// its YouTube recording the moment Live Darshan hands off to Gallery (see
+// isLiveDarshanActive in lib/events.ts) if the committee doesn't have the
+// Instagram highlight reel yet; app/gallery/page.tsx just skips the
+// Instagram tile for a year that doesn't have one.
 export const PREVIOUS_YEARS: {
   year: number;
   instagramUrl?: string;
@@ -58,6 +63,7 @@ export const PREVIOUS_YEARS: {
     // right embed for "moved to Gallery" with no new link to go find.
     year: FESTIVAL_START.getFullYear(),
     youtubeEmbedUrl: LIVE_STREAM_URL,
+    instagramUrl: INSTAGRAM_REEL_URL,
   },
   {
     year: 2025,

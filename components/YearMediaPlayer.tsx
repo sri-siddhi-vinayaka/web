@@ -3,40 +3,12 @@
 import { useEffect, useState } from "react";
 import InstagramIcon from "@/components/icons/InstagramIcon";
 import YouTubeIcon from "@/components/icons/YouTubeIcon";
+import { loadInstagramEmbedScript } from "@/lib/instagramEmbed";
 
 type Platform = "youtube" | "instagram";
 
 const PLATFORM_ICON = { youtube: YouTubeIcon, instagram: InstagramIcon } as const;
 const PLATFORM_LABEL = { youtube: "YouTube", instagram: "Instagram" } as const;
-
-declare global {
-  interface Window {
-    instgrm?: { Embeds: { process: () => void } };
-  }
-}
-
-let instagramScriptPromise: Promise<void> | null = null;
-
-// Renders Instagram's real preview card in place, via their own embed.js +
-// <blockquote> handshake (see lib/config.ts's comment on PREVIOUS_YEARS for
-// why the simpler <iframe> approach doesn't work, and why tapping the card
-// itself still opens Instagram in a new tab — that's Instagram's, not
-// ours). Loaded on first tap, not on page load, so visitors who never tap
-// the Instagram tile never pay for it.
-function loadInstagramEmbedScript(): Promise<void> {
-  if (typeof window === "undefined") return Promise.resolve();
-  if (window.instgrm) return Promise.resolve();
-  if (instagramScriptPromise) return instagramScriptPromise;
-
-  instagramScriptPromise = new Promise((resolve) => {
-    const script = document.createElement("script");
-    script.src = "https://www.instagram.com/embed.js";
-    script.async = true;
-    script.onload = () => resolve();
-    document.body.appendChild(script);
-  });
-  return instagramScriptPromise;
-}
 
 export default function YearMediaPlayer({
   year,
