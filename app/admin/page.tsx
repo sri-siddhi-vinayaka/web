@@ -13,6 +13,7 @@ import {
   deleteCharityMediaAction,
   deleteCharityYearAction,
   deleteEventAction,
+  deleteFoodRegistrationAction,
   deleteGalleryItemAction,
   deleteRegistrationAction,
   deleteSuggestionAction,
@@ -276,6 +277,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
                 <th className="px-3 py-2 font-medium">Phone</th>
                 <th className="px-3 py-2 font-medium">Date</th>
                 <th className="px-3 py-2 font-medium">Dish</th>
+                <th className="px-3 py-2 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -287,12 +289,19 @@ export default async function AdminPage(props: PageProps<"/admin">) {
                     <td className="px-3 py-2 text-foreground">{registration.phone ?? "—"}</td>
                     <td className="px-3 py-2 text-muted">{event ? formatDate(event.start_time) : "—"}</td>
                     <td className="px-3 py-2 text-muted">{registration.dish_name}</td>
+                    <td className="px-3 py-2">
+                      <form action={deleteFoodRegistrationAction.bind(null, registration.id)}>
+                        <button type="submit" className="text-danger underline underline-offset-2">
+                          Delete
+                        </button>
+                      </form>
+                    </td>
                   </tr>
                 );
               })}
               {foodRegistrations.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-3 py-4 text-center text-muted">
+                  <td colSpan={5} className="px-3 py-4 text-center text-muted">
                     No food registrations yet.
                   </td>
                 </tr>
