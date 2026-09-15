@@ -13,7 +13,7 @@ import {
   getPoojaCapacity,
   getRegisteredDetails,
   getPoojaRegistrableDays,
-  getUpcomingDays,
+  isPastDay,
   POOJA_SLOTS_PER_DAY,
 } from "@/lib/events";
 import { getClaimedDishes } from "@/lib/food";
@@ -37,7 +37,10 @@ function formatDate(iso: string): string {
 
 export default async function PoojaRegistrationPage() {
   const events = await getEvents();
-  const days = getUpcomingDays(getPoojaRegistrableDays(dedupeByDay(events)));
+  // Every pooja-registrable day, past included — a day that's already
+  // happened still shows who registered for it, it just no longer offers
+  // the form (see isPastDay below).
+  const days = getPoojaRegistrableDays(dedupeByDay(events));
   // Fetches claimed-dish counts too, not just registration counts — the
   // accordion header shows both signals for every day (see DayStatLine)
   // so picking a day here means weighing Food registration's numbers too,
@@ -86,6 +89,7 @@ export default async function PoojaRegistrationPage() {
           <div className="mt-6 flex flex-col gap-3">
             {days.map((day) => {
               const capacity = getPoojaCapacity(detailsByDay.get(day.id) ?? []);
+              const isPast = isPastDay(day);
 
               return (
                 <DayAccordionItem
@@ -95,9 +99,9 @@ export default async function PoojaRegistrationPage() {
                     <div>
                       <h2 className="text-sm font-semibold uppercase tracking-wide text-accent">
                         Day {day.day_number} — {formatDate(day.start_time)}
-                        {capacity.closed && (
+                        {(isPast || capacity.closed) && (
                           <span className="ml-2 rounded-full bg-surface-muted px-2 py-0.5 text-xs font-medium normal-case tracking-normal text-muted ring-1 ring-border">
-                            Bookings closed
+                            {isPast ? "Event passed" : "Bookings closed"}
                           </span>
                         )}
                       </h2>
@@ -117,7 +121,12 @@ export default async function PoojaRegistrationPage() {
                   </div>
 
                   <div className="mt-4">
-                    {capacity.closed ? (
+                    {isPast ? (
+                      <p className="rounded-xl bg-surface-muted p-4 text-sm font-medium text-foreground ring-1 ring-border">
+                        This day has already passed — registration is closed. The
+                        list above shows who joined.
+                      </p>
+                    ) : capacity.closed ? (
                       <p className="rounded-xl bg-surface-muted p-4 text-sm font-medium text-foreground ring-1 ring-border">
                         Pooja registration for this day is full — bookings are closed.
                         Contact the admin team directly if you&apos;d still like to be
@@ -136,12 +145,14 @@ export default async function PoojaRegistrationPage() {
                     )}
                   </div>
 
-                  <Link
-                    href={`/register/food#day-${day.day_number}`}
-                    className="mt-4 inline-block text-sm font-medium text-primary underline underline-offset-2"
-                  >
-                    Bringing food too? Switch to Food Registration for this day →
-                  </Link>
+                  {!isPast && (
+                    <Link
+                      href={`/register/food#day-${day.day_number}`}
+                      className="mt-4 inline-block text-sm font-medium text-primary underline underline-offset-2"
+                    >
+                      Bringing food too? Switch to Food Registration for this day →
+                    </Link>
+                  )}
                 </DayAccordionItem>
               );
             })}

@@ -12,7 +12,7 @@ import {
   getEvents,
   getPoojaRegistrableDays,
   getRegisteredDetails,
-  getUpcomingDays,
+  isPastDay,
 } from "@/lib/events";
 import { getClaimedDishes } from "@/lib/food";
 
@@ -40,8 +40,9 @@ export default async function FoodRegistrationPage() {
   // exclusion — every day, including the opening and closing ceremonies,
   // can take a food sign-up. Still need to know which days *do* have Pooja
   // registration open, to decide whether the cross-link below makes sense
-  // for a given day.
-  const days = getUpcomingDays(dedupedDays);
+  // for a given day. Every day shows, past included — see isPastDay below
+  // for why registering is closed there while the claimed-dish list stays.
+  const days = dedupedDays;
   const poojaRegistrableDayNumbers = new Set(
     getPoojaRegistrableDays(dedupedDays).map((day) => day.day_number)
   );
@@ -89,44 +90,60 @@ export default async function FoodRegistrationPage() {
           </div>
 
           <div className="mt-6 flex flex-col gap-3">
-            {days.map((day) => (
-              <DayAccordionItem
-                key={day.id}
-                dayNumber={day.day_number}
-                header={
+            {days.map((day) => {
+              const isPast = isPastDay(day);
+
+              return (
+                <DayAccordionItem
+                  key={day.id}
+                  dayNumber={day.day_number}
+                  header={
+                    <div>
+                      <h2 className="text-sm font-semibold uppercase tracking-wide text-accent">
+                        Day {day.day_number} — {formatDate(day.start_time)}
+                        {isPast && (
+                          <span className="ml-2 rounded-full bg-surface-muted px-2 py-0.5 text-xs font-medium normal-case tracking-normal text-muted ring-1 ring-border">
+                            Event passed
+                          </span>
+                        )}
+                      </h2>
+                      <DayStatLine
+                        eventId={day.id}
+                        initialDetails={poojaDetailsByDay.get(day.id) ?? []}
+                        initialDishCount={dishesByDay.get(day.id)?.length ?? 0}
+                      />
+                    </div>
+                  }
+                >
                   <div>
-                    <h2 className="text-sm font-semibold uppercase tracking-wide text-accent">
-                      Day {day.day_number} — {formatDate(day.start_time)}
-                    </h2>
-                    <DayStatLine
-                      eventId={day.id}
-                      initialDetails={poojaDetailsByDay.get(day.id) ?? []}
-                      initialDishCount={dishesByDay.get(day.id)?.length ?? 0}
-                    />
+                    <h3 className="text-sm font-medium text-foreground">Dishes already claimed</h3>
+                    <div className="mt-2">
+                      <ClaimedDishesList eventId={day.id} initialDishes={dishesByDay.get(day.id) ?? []} />
+                    </div>
                   </div>
-                }
-              >
-                <div>
-                  <h3 className="text-sm font-medium text-foreground">Dishes already claimed</h3>
-                  <div className="mt-2">
-                    <ClaimedDishesList eventId={day.id} initialDishes={dishesByDay.get(day.id) ?? []} />
+
+                  <div className="mt-4">
+                    {isPast ? (
+                      <p className="rounded-xl bg-surface-muted p-4 text-sm font-medium text-foreground ring-1 ring-border">
+                        This day has already passed — sign-ups are closed. The
+                        list above shows what was claimed.
+                      </p>
+                    ) : (
+                      <FoodRegistrationForm eventId={day.id} />
+                    )}
                   </div>
-                </div>
 
-                <div className="mt-4">
-                  <FoodRegistrationForm eventId={day.id} />
-                </div>
-
-                {poojaRegistrableDayNumbers.has(day.day_number) && (
-                  <Link
-                    href={`/register/pooja#day-${day.day_number}`}
-                    className="mt-4 inline-block text-sm font-medium text-primary underline underline-offset-2"
-                  >
-                    Want to attend Pooja too? Switch to Pooja Registration for this day →
-                  </Link>
-                )}
-              </DayAccordionItem>
-            ))}
+                  {!isPast && poojaRegistrableDayNumbers.has(day.day_number) && (
+                    <Link
+                      href={`/register/pooja#day-${day.day_number}`}
+                      className="mt-4 inline-block text-sm font-medium text-primary underline underline-offset-2"
+                    >
+                      Want to attend Pooja too? Switch to Pooja Registration for this day →
+                    </Link>
+                  )}
+                </DayAccordionItem>
+              );
+            })}
           </div>
         </>
       )}

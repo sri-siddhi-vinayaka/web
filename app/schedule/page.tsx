@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import ClaimedDishesList from "@/components/ClaimedDishesList";
 import RegisteredDetailsTable from "@/components/RegisteredDetailsTable";
 import RegistrationCount from "@/components/RegistrationCount";
 import {
@@ -8,8 +9,10 @@ import {
   getPoojaCapacity,
   getRegisteredDetails,
   isLiveDarshanActive,
+  isPastDay,
   POOJA_SLOTS_PER_DAY,
 } from "@/lib/events";
+import { getClaimedDishes } from "@/lib/food";
 import { FESTIVAL_END, FESTIVAL_START } from "@/lib/config";
 import type { EventItem } from "@/types";
 
@@ -61,6 +64,17 @@ function groupByDay(events: EventItem[]): Map<number, EventItem[]> {
   return days;
 }
 
+// Shared look for a registration link that isn't clickable right now
+// (either the day's already past, or Pooja hit capacity) — a plain notice
+// instead of a disabled-looking link.
+function ClosedNotice({ label }: { label: string }) {
+  return (
+    <span className="flex min-h-11 flex-1 items-center justify-center rounded-lg bg-surface-muted px-3 py-2 text-center text-sm font-medium text-muted ring-1 ring-border">
+      {label}
+    </span>
+  );
+}
+
 export default async function SchedulePage() {
   const events = await getEvents();
 
@@ -87,17 +101,28 @@ export default async function SchedulePage() {
     )
   );
 
-  // Pooja registration (and so its capacity and "who's registered" list) is
-  // per day, not per event row — dedupeByDay picks the same representative
-  // event per day_number that /register/pooja#day-N actually registers
-  // against (see getPoojaRegistrableDays), so both are checked against that
-  // one event's confirmed registrations rather than summed across every
-  // event on the day. Reuses detailsByEvent above rather than fetching again.
-  const poojaDayEventByDay = new Map(dedupeByDay(events).map((event) => [event.day_number, event]));
+  // Both registration flows register per day, not per event row —
+  // dedupeByDay picks the same representative event per day_number that
+  // /register/pooja#day-N and /register/food#day-N actually register
+  // against (see getPoojaRegistrableDays / FoodRegistrationPage), so
+  // capacity, "who's registered", and claimed dishes are all checked
+  // against that one event's data rather than summed across every event on
+  // the day.
+  const dayRepresentativeEvent = new Map(dedupeByDay(events).map((event) => [event.day_number, event]));
   const poojaCapacityByDay = new Map(
-    [...poojaDayEventByDay.entries()]
+    [...dayRepresentativeEvent.entries()]
       .filter(([dayNumber]) => dayNumber !== firstDay && dayNumber !== lastDay)
       .map(([dayNumber, event]) => [dayNumber, getPoojaCapacity(detailsByEvent.get(event.id) ?? [])] as const)
+  );
+  // Food registration takes sign-ups every day, including day 1/12 (unlike
+  // Pooja) — see getPoojaRegistrableDays' comment — so this isn't filtered
+  // the way poojaCapacityByDay is.
+  const dishesByDay = new Map(
+    await Promise.all(
+      [...dayRepresentativeEvent.entries()].map(
+        async ([dayNumber, event]) => [dayNumber, await getClaimedDishes(event.id)] as const
+      )
+    )
   );
 
   return (
@@ -105,7 +130,10 @@ export default async function SchedulePage() {
       <h1 className="text-2xl font-bold text-brand">Festival Schedule</h1>
       <p className="mt-1 text-sm text-muted">{FESTIVAL_DATE_RANGE}</p>
       <div className="mt-6 flex flex-col gap-8">
-        {[...days.entries()].map(([dayNumber, dayEvents]) => (
+        {[...days.entries()].map(([dayNumber, dayEvents]) => {
+          const dayIsPast = isPastDay(dayEvents[0]);
+
+          return (
           <section key={dayNumber}>
             <h2 className="text-sm font-semibold uppercase tracking-wide text-accent">
               Day {dayNumber}
@@ -139,12 +167,26 @@ export default async function SchedulePage() {
                 <h3 className="text-xs font-medium text-foreground">Already registered</h3>
                 <div className="mt-1">
                   <RegisteredDetailsTable
-                    eventId={poojaDayEventByDay.get(dayNumber)!.id}
-                    initialDetails={detailsByEvent.get(poojaDayEventByDay.get(dayNumber)!.id) ?? []}
+                    eventId={dayRepresentativeEvent.get(dayNumber)!.id}
+                    initialDetails={detailsByEvent.get(dayRepresentativeEvent.get(dayNumber)!.id) ?? []}
                   />
                 </div>
               </div>
             )}
+
+            {/* Dish names are public the same way registrant names are (see
+                food_registrations' claimed_dishes() RPC) — every day takes
+                Food sign-ups, including day 1/12, so unlike the block above
+                this isn't gated to pooja-registrable days. */}
+            <div className="mt-3">
+              <h3 className="text-xs font-medium text-foreground">Dishes already claimed</h3>
+              <div className="mt-1">
+                <ClaimedDishesList
+                  eventId={dayRepresentativeEvent.get(dayNumber)!.id}
+                  initialDishes={dishesByDay.get(dayNumber) ?? []}
+                />
+              </div>
+            </div>
 
             {/* One registration link set per day, not per event — a day can
                 carry more than one event (the pooja itself, plus e.g. a
@@ -156,17 +198,18 @@ export default async function SchedulePage() {
                 registration has no such restriction and shows every day. */}
             <div className="mt-3 flex flex-wrap gap-2">
               {dayNumber !== firstDay && dayNumber !== lastDay && (() => {
+                // A day that's already happened no longer takes
+                // registrations, full or not — check that before capacity.
+                if (dayIsPast) {
+                  return <ClosedNotice label="Pooja Registration — This day has passed" />;
+                }
+
                 const capacity = poojaCapacityByDay.get(dayNumber);
 
                 // Bookings closed: no point showing a link into a form that
-                // won't get a confirmed spot — replace it with a plain,
-                // non-interactive notice instead of a disabled-looking link.
+                // won't get a confirmed spot.
                 if (capacity?.closed) {
-                  return (
-                    <span className="flex min-h-11 flex-1 items-center justify-center rounded-lg bg-surface-muted px-3 py-2 text-center text-sm font-medium text-muted ring-1 ring-border">
-                      Pooja Registration — Bookings closed
-                    </span>
-                  );
+                  return <ClosedNotice label="Pooja Registration — Bookings closed" />;
                 }
 
                 return (
@@ -186,12 +229,16 @@ export default async function SchedulePage() {
                   </div>
                 );
               })()}
-              <Link
-                href={`/register/food#day-${dayNumber}`}
-                className="min-h-11 flex-1 rounded-lg bg-surface-muted px-3 py-2 text-center text-sm font-medium text-foreground ring-1 ring-border transition-colors hover:bg-border"
-              >
-                Food Registration
-              </Link>
+              {dayIsPast ? (
+                <ClosedNotice label="Food Registration — This day has passed" />
+              ) : (
+                <Link
+                  href={`/register/food#day-${dayNumber}`}
+                  className="min-h-11 flex-1 rounded-lg bg-surface-muted px-3 py-2 text-center text-sm font-medium text-foreground ring-1 ring-border transition-colors hover:bg-border"
+                >
+                  Food Registration
+                </Link>
+              )}
               {/* Day 1 only — that's where the live stream starts (see
                   LIVE_STREAM_URL in lib/config.ts). Points at our own /live
                   page rather than the raw YouTube URL directly, same as
@@ -208,7 +255,8 @@ export default async function SchedulePage() {
               )}
             </div>
           </section>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

@@ -117,11 +117,14 @@ export function dedupeByDay(events: EventItem[]): EventItem[] {
   });
 }
 
-// Registration only makes sense for today or a day still ahead — a day that
-// already happened isn't worth showing, let alone registering for.
-export function getUpcomingDays(days: EventItem[], now: Date = new Date()): EventItem[] {
-  const todayKey = calendarDateKey(now);
-  return days.filter((day) => calendarDateKey(new Date(day.start_time)) >= todayKey);
+// A day is "past" once its whole calendar date (ET) has elapsed — matches
+// isLiveDarshanActive's day-granularity reasoning above. Registering for a
+// past day doesn't make sense, but the day and who already registered for
+// it still do — see getPoojaCapacity's callers, which now show every day,
+// past included, and just swap the registration form for a closed notice
+// once isPastDay is true.
+export function isPastDay(day: EventItem, now: Date = new Date()): boolean {
+  return calendarDateKey(new Date(day.start_time)) < calendarDateKey(now);
 }
 
 // The festival's first and last days (Ganesh Sthapana and the final
