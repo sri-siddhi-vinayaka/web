@@ -4,6 +4,7 @@ import { Fragment } from "react";
 import ClaimedDishesList from "@/components/ClaimedDishesList";
 import RegisteredDetailsTable from "@/components/RegisteredDetailsTable";
 import RegistrationCount from "@/components/RegistrationCount";
+import YouTubeIcon from "@/components/icons/YouTubeIcon";
 import {
   dedupeByDay,
   getEvents,
@@ -16,7 +17,7 @@ import {
   POOJA_SLOTS_PER_DAY,
 } from "@/lib/events";
 import { getClaimedDishes } from "@/lib/food";
-import { FESTIVAL_END, FESTIVAL_START } from "@/lib/config";
+import { FESTIVAL_END, FESTIVAL_START, LIVE_STREAM_WATCH_URL } from "@/lib/config";
 import type { EventItem } from "@/types";
 
 export const metadata: Metadata = { title: "Schedule" };
@@ -170,7 +171,25 @@ export default async function SchedulePage() {
                   key={event.id}
                   className="rounded-2xl bg-surface p-4 shadow-sm ring-1 ring-border"
                 >
-                  <p className="font-semibold text-foreground">{event.title}</p>
+                  <p className="flex items-center gap-1.5 font-semibold text-foreground">
+                    {event.title}
+                    {/* Day 1 only — unlike the "Watch Live Darshan" button
+                        further down this same card (isLiveDarshanActive-
+                        gated, internal /live link), this is a permanent
+                        outbound link to the recording itself, so it's still
+                        here once Day 1 — and Live Darshan with it — is over. */}
+                    {dayNumber === firstDay && (
+                      <a
+                        href={LIVE_STREAM_WATCH_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Watch on YouTube"
+                        className="text-muted transition-colors hover:text-foreground"
+                      >
+                        <YouTubeIcon className="h-4 w-4 shrink-0" />
+                      </a>
+                    )}
+                  </p>
                   <p className="text-sm text-muted">{formatTime(event.start_time)}</p>
                   {event.description && (
                     <p className="mt-1 text-sm text-muted">{event.description}</p>
