@@ -8,7 +8,6 @@ import NotificationOptIn from "@/components/NotificationOptIn";
 import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 import ScrollIcon from "@/components/icons/ScrollIcon";
 import CalendarIcon from "@/components/icons/CalendarIcon";
-import ChatIcon from "@/components/icons/ChatIcon";
 import { getEvents, getTodayHighlights, isLiveDarshanActive } from "@/lib/events";
 import { FESTIVAL_END, FESTIVAL_START, VENUE_ADDRESS, VENUE_MAPS_URL } from "@/lib/config";
 
@@ -46,10 +45,12 @@ const FESTIVAL_LAST_DAY = new Date(FESTIVAL_END.getTime() - 24 * 60 * 60 * 1000)
 // schedule page is where visitors pick a day and register for either from
 // there (see app/schedule/page.tsx), so this only needs to get them to
 // that one entry point.
+//
+// No Contact Us tile here (yet) — there's no dedicated email/Instagram
+// account to point it at yet either; revisit once that exists.
 const QUICK_LINKS: { href: string; label: string; Icon: ComponentType<{ className?: string }> }[] = [
   { href: "/about-ganesha", label: "About Ganesha", Icon: ScrollIcon },
   { href: "/schedule", label: "Schedule", Icon: CalendarIcon },
-  { href: "/contact", label: "Contact Us", Icon: ChatIcon },
 ];
 
 export default async function Home() {
@@ -97,7 +98,7 @@ export default async function Home() {
         <InstagramReelHighlight />
       </section>
 
-      <section className="mx-auto grid w-full max-w-sm grid-cols-3 gap-2">
+      <section className="mx-auto grid w-full max-w-sm grid-cols-2 gap-2">
         {QUICK_LINKS.map(({ href, label, Icon }) => (
           <Link
             key={href}
