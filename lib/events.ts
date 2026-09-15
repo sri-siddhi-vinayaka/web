@@ -117,11 +117,32 @@ export function dedupeByDay(events: EventItem[]): EventItem[] {
   });
 }
 
-// Registration only makes sense for today or a day still ahead — a day that
-// already happened isn't worth showing, let alone registering for.
-export function getUpcomingDays(days: EventItem[], now: Date = new Date()): EventItem[] {
-  const todayKey = calendarDateKey(now);
-  return days.filter((day) => calendarDateKey(new Date(day.start_time)) >= todayKey);
+// A day is "past" once its whole calendar date (ET) has elapsed — matches
+// isLiveDarshanActive's day-granularity reasoning above. Registering for a
+// past day doesn't make sense, but the day and who already registered for
+// it still do — see getPoojaCapacity's callers, which now show every day,
+// past included, and just swap the registration form for a closed notice
+// once isPastDay is true.
+export function isPastDay(day: EventItem, now: Date = new Date()): boolean {
+  return calendarDateKey(new Date(day.start_time)) < calendarDateKey(now);
+}
+
+export function isToday(day: EventItem, now: Date = new Date()): boolean {
+  return calendarDateKey(new Date(day.start_time)) === calendarDateKey(now);
+}
+
+// Reorders a chronologically-sorted day list so today and every day still
+// ahead lead (in their original order), with past days pushed to the end
+// (also in their original order) rather than interleaved — what's relevant
+// right now should be the first thing visitors see, not buried below a
+// week of days that have already happened. Used by /schedule,
+// /register/pooja, and /register/food; each caller is responsible for
+// rendering a "Past days" divider at the point this returns the first past
+// day (see isPastDay).
+export function orderByRelevance<T extends EventItem>(days: T[], now: Date = new Date()): T[] {
+  const upcoming = days.filter((day) => !isPastDay(day, now));
+  const past = days.filter((day) => isPastDay(day, now));
+  return [...upcoming, ...past];
 }
 
 // The festival's first and last days (Ganesh Sthapana and the final
@@ -182,30 +203,29 @@ export async function getGalleryItems(): Promise<GalleryItem[]> {
   }
 }
 
-// Deliberately goes through the `registration_count` RPC (see
-// supabase/migrations/20260911022120_registration_count_broadcast.sql) rather than
-// `select count(*) from registrations` — there is no public SELECT policy on
-// registrations (it holds every registrant's name and phone number), so a
-// direct count query would be blocked by RLS. The RPC is a SECURITY DEFINER
-// function that returns only the aggregate.
-export async function getRegistrationCount(eventId: string): Promise<number> {
-  if (!isSupabaseConfigured) return 0;
-
-  try {
-    const { data, error } = await withTimeout(
-      supabase.rpc("registration_count", { p_event_id: eventId }) as unknown as Promise<{ data: number | null; error: { message: string } | null }>,
-      800,
-      "getRegistrationCount"
-    );
-
-    if (error) return logAndFallback("getRegistrationCount", error, 0);
-    return data ?? 0;
-  } catch (e) {
-    return logAndFallback("getRegistrationCount", e as { message: string }, 0);
-  }
-}
-
 export type RegisteredDetail = { name: string; adult_count: number; child_count: number };
+
+// A raw headcount ("8 people registered") reads as 8 separate sign-ups,
+// when it's really e.g. 2 families totaling 8 people — confusing for
+// visitors trying to gauge how registration is actually going. This turns
+// the same confirmed-registration details already fetched for capacity
+// display into a breakdown that says what's actually true: how many
+// registrations, and how many adults/children they add up to. "0 children"
+// is omitted rather than stated, since most registrations are adults-only.
+export function formatRegistrationSummary(details: RegisteredDetail[]): string {
+  const familyCount = details.length;
+  if (familyCount === 0) return "0 registered";
+
+  const adults = details.reduce((sum, detail) => sum + detail.adult_count, 0);
+  const children = details.reduce((sum, detail) => sum + detail.child_count, 0);
+
+  const peopleParts = [`${adults} ${adults === 1 ? "adult" : "adults"}`];
+  if (children > 0) {
+    peopleParts.push(`${children} ${children === 1 ? "child" : "children"}`);
+  }
+
+  return `${familyCount} ${familyCount === 1 ? "family" : "families"} registered: ${peopleParts.join(", ")}`;
+}
 
 // Display-only capacity signal for the schedule/registration pages — not
 // enforced server-side. register_for_event() always inserts as 'pending'

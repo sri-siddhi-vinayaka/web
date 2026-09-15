@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Fragment } from "react";
 import DayAccordionItem from "@/components/DayAccordionItem";
 import DayCalendarStrip from "@/components/DayCalendarStrip";
 import DayStatLine from "@/components/DayStatLine";
@@ -12,9 +13,10 @@ import {
   getEvents,
   getPoojaCapacity,
   getRegisteredDetails,
-  getRegistrationCount,
   getPoojaRegistrableDays,
-  getUpcomingDays,
+  isPastDay,
+  isToday,
+  orderByRelevance,
   POOJA_SLOTS_PER_DAY,
 } from "@/lib/events";
 import { getClaimedDishes } from "@/lib/food";
@@ -38,16 +40,18 @@ function formatDate(iso: string): string {
 
 export default async function PoojaRegistrationPage() {
   const events = await getEvents();
-  const days = getUpcomingDays(getPoojaRegistrableDays(dedupeByDay(events)));
+  // Every pooja-registrable day, past included — a day that's already
+  // happened still shows who registered for it, it just no longer offers
+  // the form (see isPastDay below). Today and what's still ahead lead;
+  // past days are pushed behind a "Past days" divider (firstPastDayIndex).
+  const days = orderByRelevance(getPoojaRegistrableDays(dedupeByDay(events)));
+  const firstPastDayIndex = days.findIndex((day) => isPastDay(day));
   // Fetches claimed-dish counts too, not just registration counts — the
   // accordion header shows both signals for every day (see DayStatLine)
   // so picking a day here means weighing Food registration's numbers too,
   // not just this page's own.
-  const [detailsByDay, countsByDay, dishCountsByDay] = await Promise.all([
+  const [detailsByDay, dishCountsByDay] = await Promise.all([
     Promise.all(days.map(async (day) => [day.id, await getRegisteredDetails(day.id)] as const)).then(
-      (entries) => new Map(entries)
-    ),
-    Promise.all(days.map(async (day) => [day.id, await getRegistrationCount(day.id)] as const)).then(
       (entries) => new Map(entries)
     ),
     Promise.all(days.map(async (day) => [day.id, (await getClaimedDishes(day.id)).length] as const)).then(
@@ -88,26 +92,38 @@ export default async function PoojaRegistrationPage() {
           </div>
 
           <div className="mt-6 flex flex-col gap-3">
-            {days.map((day) => {
+            {days.map((day, index) => {
               const capacity = getPoojaCapacity(detailsByDay.get(day.id) ?? []);
+              const isPast = isPastDay(day);
+              const today = !isPast && isToday(day);
 
               return (
+                <Fragment key={day.id}>
+                  {index === firstPastDayIndex && (
+                    <h2 className="mt-2 border-t border-border pt-6 text-xs font-semibold uppercase tracking-wide text-muted">
+                      Past days
+                    </h2>
+                  )}
                 <DayAccordionItem
-                  key={day.id}
                   dayNumber={day.day_number}
                   header={
                     <div>
                       <h2 className="text-sm font-semibold uppercase tracking-wide text-accent">
                         Day {day.day_number} — {formatDate(day.start_time)}
-                        {capacity.closed && (
+                        {today && (
+                          <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-xs font-medium normal-case tracking-normal text-primary-contrast">
+                            Today
+                          </span>
+                        )}
+                        {(isPast || capacity.closed) && (
                           <span className="ml-2 rounded-full bg-surface-muted px-2 py-0.5 text-xs font-medium normal-case tracking-normal text-muted ring-1 ring-border">
-                            Bookings closed
+                            {isPast ? "Event passed" : "Bookings closed"}
                           </span>
                         )}
                       </h2>
                       <DayStatLine
                         eventId={day.id}
-                        initialRegisteredCount={countsByDay.get(day.id) ?? 0}
+                        initialDetails={detailsByDay.get(day.id) ?? []}
                         initialDishCount={dishCountsByDay.get(day.id) ?? 0}
                       />
                     </div>
@@ -121,7 +137,12 @@ export default async function PoojaRegistrationPage() {
                   </div>
 
                   <div className="mt-4">
-                    {capacity.closed ? (
+                    {isPast ? (
+                      <p className="rounded-xl bg-surface-muted p-4 text-sm font-medium text-foreground ring-1 ring-border">
+                        This day has already passed — registration is closed. The
+                        list above shows who joined.
+                      </p>
+                    ) : capacity.closed ? (
                       <p className="rounded-xl bg-surface-muted p-4 text-sm font-medium text-foreground ring-1 ring-border">
                         Pooja registration for this day is full — bookings are closed.
                         Contact the admin team directly if you&apos;d still like to be
@@ -140,13 +161,16 @@ export default async function PoojaRegistrationPage() {
                     )}
                   </div>
 
-                  <Link
-                    href={`/register/food#day-${day.day_number}`}
-                    className="mt-4 inline-block text-sm font-medium text-primary underline underline-offset-2"
-                  >
-                    Bringing food too? Switch to Food Registration for this day →
-                  </Link>
+                  {!isPast && (
+                    <Link
+                      href={`/register/food#day-${day.day_number}`}
+                      className="mt-4 inline-block text-sm font-medium text-primary underline underline-offset-2"
+                    >
+                      Bringing food too? Switch to Food Registration for this day →
+                    </Link>
+                  )}
                 </DayAccordionItem>
+                </Fragment>
               );
             })}
           </div>
