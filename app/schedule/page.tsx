@@ -9,6 +9,7 @@ import {
   dedupeByDay,
   getEvents,
   getPoojaCapacity,
+  getPoojaRegistrableDays,
   getRegisteredDetails,
   isLiveDarshanActive,
   isPastDay,
@@ -98,7 +99,6 @@ export default async function SchedulePage() {
   const days = groupByDay(events);
   const dayNumbers = [...days.keys()];
   const firstDay = Math.min(...dayNumbers);
-  const lastDay = Math.max(...dayNumbers);
 
   // Both registration flows register per day, not per event row —
   // dedupeByDay picks the same representative event per day_number that
@@ -107,7 +107,15 @@ export default async function SchedulePage() {
   // capacity, "who's registered", and claimed dishes are all checked
   // against that one event's data rather than summed across every event on
   // the day.
-  const dayRepresentativeEvent = new Map(dedupeByDay(events).map((event) => [event.day_number, event]));
+  const dedupedDays = dedupeByDay(events);
+  const dayRepresentativeEvent = new Map(dedupedDays.map((event) => [event.day_number, event]));
+  // Days with no public Pooja sign-up at all — the structural first/last
+  // day plus whatever ADMIN_RUN_POOJA_DAY_NUMBERS adds (e.g. Day 7's
+  // Ganapati Homam) — see getPoojaRegistrableDays for the full rule. Food
+  // registration has no such restriction and isn't filtered by this.
+  const poojaRegistrableDayNumbers = new Set(
+    getPoojaRegistrableDays(dedupedDays).map((event) => event.day_number)
+  );
 
   // What's relevant right now (today, then what's still ahead) leads;
   // days that already happened are pushed to the end, behind a "Past
@@ -125,7 +133,7 @@ export default async function SchedulePage() {
 
   const poojaCapacityByDay = new Map(
     [...dayRepresentativeEvent.entries()]
-      .filter(([dayNumber]) => dayNumber !== firstDay && dayNumber !== lastDay)
+      .filter(([dayNumber]) => poojaRegistrableDayNumbers.has(dayNumber))
       .map(([dayNumber, event]) => [dayNumber, getPoojaCapacity(detailsByEvent.get(event.id) ?? [])] as const)
   );
   // Food registration takes sign-ups every day, including day 1/12 (unlike
@@ -212,7 +220,7 @@ export default async function SchedulePage() {
                 RegisteredDetailsTable's "be the first!" default — that
                 encouragement belongs next to the form on /register/pooja,
                 not repeated down a list of mostly-empty future days. */}
-            {dayNumber !== firstDay && dayNumber !== lastDay && (() => {
+            {poojaRegistrableDayNumbers.has(dayNumber) && (() => {
               const details = detailsByEvent.get(dayRepresentativeEvent.get(dayNumber)!.id) ?? [];
               if (details.length === 0) return null;
 
@@ -254,13 +262,13 @@ export default async function SchedulePage() {
             {/* One registration link set per day, not per event — a day can
                 carry more than one event (the pooja itself, plus e.g. a
                 fun-event entry), and every event here shares the same
-                day-level registration flow. The Pooja ritual on days 1 and
-                12 (Sthapana and the final pooja/Ladoo celebration) is
-                admin-run with no public sign-up, so that link alone is
-                skipped for the structurally first/last day — Food
-                registration has no such restriction and shows every day. */}
+                day-level registration flow. The Pooja Registration link is
+                skipped for any day in poojaRegistrableDayNumbers' complement
+                (structurally first/last day, plus Day 7's Ganapati Homam —
+                see ADMIN_RUN_POOJA_DAY_NUMBERS) — Food registration has no
+                such restriction and shows every day regardless. */}
             <div className="mt-3 flex flex-wrap gap-2">
-              {dayNumber !== firstDay && dayNumber !== lastDay && (() => {
+              {poojaRegistrableDayNumbers.has(dayNumber) && (() => {
                 // A day that's already happened no longer takes
                 // registrations, full or not — check that before capacity.
                 if (dayIsPast) {
