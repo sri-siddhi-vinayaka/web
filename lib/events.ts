@@ -182,30 +182,29 @@ export async function getGalleryItems(): Promise<GalleryItem[]> {
   }
 }
 
-// Deliberately goes through the `registration_count` RPC (see
-// supabase/migrations/20260911022120_registration_count_broadcast.sql) rather than
-// `select count(*) from registrations` — there is no public SELECT policy on
-// registrations (it holds every registrant's name and phone number), so a
-// direct count query would be blocked by RLS. The RPC is a SECURITY DEFINER
-// function that returns only the aggregate.
-export async function getRegistrationCount(eventId: string): Promise<number> {
-  if (!isSupabaseConfigured) return 0;
-
-  try {
-    const { data, error } = await withTimeout(
-      supabase.rpc("registration_count", { p_event_id: eventId }) as unknown as Promise<{ data: number | null; error: { message: string } | null }>,
-      800,
-      "getRegistrationCount"
-    );
-
-    if (error) return logAndFallback("getRegistrationCount", error, 0);
-    return data ?? 0;
-  } catch (e) {
-    return logAndFallback("getRegistrationCount", e as { message: string }, 0);
-  }
-}
-
 export type RegisteredDetail = { name: string; adult_count: number; child_count: number };
+
+// A raw headcount ("8 people registered") reads as 8 separate sign-ups,
+// when it's really e.g. 2 families totaling 8 people — confusing for
+// visitors trying to gauge how registration is actually going. This turns
+// the same confirmed-registration details already fetched for capacity
+// display into a breakdown that says what's actually true: how many
+// registrations, and how many adults/children they add up to. "0 children"
+// is omitted rather than stated, since most registrations are adults-only.
+export function formatRegistrationSummary(details: RegisteredDetail[]): string {
+  const familyCount = details.length;
+  if (familyCount === 0) return "0 registered";
+
+  const adults = details.reduce((sum, detail) => sum + detail.adult_count, 0);
+  const children = details.reduce((sum, detail) => sum + detail.child_count, 0);
+
+  const peopleParts = [`${adults} ${adults === 1 ? "adult" : "adults"}`];
+  if (children > 0) {
+    peopleParts.push(`${children} ${children === 1 ? "child" : "children"}`);
+  }
+
+  return `${familyCount} ${familyCount === 1 ? "family" : "families"} registered: ${peopleParts.join(", ")}`;
+}
 
 // Display-only capacity signal for the schedule/registration pages — not
 // enforced server-side. register_for_event() always inserts as 'pending'

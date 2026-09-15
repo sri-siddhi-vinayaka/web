@@ -11,7 +11,7 @@ import {
   dedupeByDay,
   getEvents,
   getPoojaRegistrableDays,
-  getRegistrationCount,
+  getRegisteredDetails,
   getUpcomingDays,
 } from "@/lib/events";
 import { getClaimedDishes } from "@/lib/food";
@@ -45,15 +45,15 @@ export default async function FoodRegistrationPage() {
   const poojaRegistrableDayNumbers = new Set(
     getPoojaRegistrableDays(dedupedDays).map((day) => day.day_number)
   );
-  // Fetches Pooja registration counts too, not just claimed dishes — the
+  // Fetches Pooja registration details too, not just claimed dishes — the
   // accordion header shows both signals for every day (see DayStatLine) so
   // picking a day here means weighing Pooja registration's numbers too,
   // not just this page's own.
-  const [dishesByDay, poojaCountsByDay] = await Promise.all([
+  const [dishesByDay, poojaDetailsByDay] = await Promise.all([
     Promise.all(days.map(async (day) => [day.id, await getClaimedDishes(day.id)] as const)).then(
       (entries) => new Map(entries)
     ),
-    Promise.all(days.map(async (day) => [day.id, await getRegistrationCount(day.id)] as const)).then(
+    Promise.all(days.map(async (day) => [day.id, await getRegisteredDetails(day.id)] as const)).then(
       (entries) => new Map(entries)
     ),
   ]);
@@ -100,7 +100,7 @@ export default async function FoodRegistrationPage() {
                     </h2>
                     <DayStatLine
                       eventId={day.id}
-                      initialRegisteredCount={poojaCountsByDay.get(day.id) ?? 0}
+                      initialDetails={poojaDetailsByDay.get(day.id) ?? []}
                       initialDishCount={dishesByDay.get(day.id)?.length ?? 0}
                     />
                   </div>

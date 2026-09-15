@@ -6,7 +6,6 @@ import {
   getEvents,
   getPoojaCapacity,
   getRegisteredDetails,
-  getRegistrationCount,
   isLiveDarshanActive,
   POOJA_SLOTS_PER_DAY,
 } from "@/lib/events";
@@ -81,9 +80,9 @@ export default async function SchedulePage() {
   const dayNumbers = [...days.keys()];
   const firstDay = Math.min(...dayNumbers);
   const lastDay = Math.max(...dayNumbers);
-  const counts = new Map(
+  const detailsByEvent = new Map(
     await Promise.all(
-      events.map(async (event) => [event.id, await getRegistrationCount(event.id)] as const)
+      events.map(async (event) => [event.id, await getRegisteredDetails(event.id)] as const)
     )
   );
 
@@ -91,16 +90,12 @@ export default async function SchedulePage() {
   // same representative event per day_number that /register/pooja#day-N
   // actually registers against (see getPoojaRegistrableDays), so capacity
   // is checked against that event's confirmed registrations rather than
-  // summed across every event on the day.
+  // summed across every event on the day. Reuses detailsByEvent above
+  // rather than fetching again.
   const poojaCapacityByDay = new Map(
-    await Promise.all(
-      dedupeByDay(events)
-        .filter((event) => event.day_number !== firstDay && event.day_number !== lastDay)
-        .map(async (event) => {
-          const details = await getRegisteredDetails(event.id);
-          return [event.day_number, getPoojaCapacity(details)] as const;
-        })
-    )
+    dedupeByDay(events)
+      .filter((event) => event.day_number !== firstDay && event.day_number !== lastDay)
+      .map((event) => [event.day_number, getPoojaCapacity(detailsByEvent.get(event.id) ?? [])] as const)
   );
 
   return (
@@ -126,7 +121,7 @@ export default async function SchedulePage() {
                   )}
                   <RegistrationCount
                     eventId={event.id}
-                    initialCount={counts.get(event.id) ?? 0}
+                    initialDetails={detailsByEvent.get(event.id) ?? []}
                   />
                 </li>
               ))}

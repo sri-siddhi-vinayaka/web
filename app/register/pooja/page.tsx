@@ -12,7 +12,6 @@ import {
   getEvents,
   getPoojaCapacity,
   getRegisteredDetails,
-  getRegistrationCount,
   getPoojaRegistrableDays,
   getUpcomingDays,
   POOJA_SLOTS_PER_DAY,
@@ -43,11 +42,8 @@ export default async function PoojaRegistrationPage() {
   // accordion header shows both signals for every day (see DayStatLine)
   // so picking a day here means weighing Food registration's numbers too,
   // not just this page's own.
-  const [detailsByDay, countsByDay, dishCountsByDay] = await Promise.all([
+  const [detailsByDay, dishCountsByDay] = await Promise.all([
     Promise.all(days.map(async (day) => [day.id, await getRegisteredDetails(day.id)] as const)).then(
-      (entries) => new Map(entries)
-    ),
-    Promise.all(days.map(async (day) => [day.id, await getRegistrationCount(day.id)] as const)).then(
       (entries) => new Map(entries)
     ),
     Promise.all(days.map(async (day) => [day.id, (await getClaimedDishes(day.id)).length] as const)).then(
@@ -107,7 +103,7 @@ export default async function PoojaRegistrationPage() {
                       </h2>
                       <DayStatLine
                         eventId={day.id}
-                        initialRegisteredCount={countsByDay.get(day.id) ?? 0}
+                        initialDetails={detailsByDay.get(day.id) ?? []}
                         initialDishCount={dishCountsByDay.get(day.id) ?? 0}
                       />
                     </div>
