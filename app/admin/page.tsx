@@ -209,7 +209,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
             </thead>
             <tbody>
               {registrations.map((registration) => {
-                const event = (registration.events as { title: string; start_time: string }[] | null)?.[0];
+                const event = registration.events as unknown as { title: string; start_time: string } | null;
                 const isConfirmed = registration.status === "confirmed";
                 return (
                   <tr key={registration.id} className="border-b border-border last:border-0">
@@ -280,7 +280,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
             </thead>
             <tbody>
               {foodRegistrations.map((registration) => {
-                const event = (registration.events as { title: string; start_time: string }[] | null)?.[0];
+                const event = registration.events as unknown as { title: string; start_time: string } | null;
                 return (
                   <tr key={registration.id} className="border-b border-border last:border-0">
                     <td className="px-3 py-2 text-foreground">{registration.contact_name}</td>
