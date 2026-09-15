@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Fragment } from "react";
 import DayAccordionItem from "@/components/DayAccordionItem";
 import DayCalendarStrip from "@/components/DayCalendarStrip";
 import DayStatLine from "@/components/DayStatLine";
@@ -14,6 +15,8 @@ import {
   getRegisteredDetails,
   getPoojaRegistrableDays,
   isPastDay,
+  isToday,
+  orderByRelevance,
   POOJA_SLOTS_PER_DAY,
 } from "@/lib/events";
 import { getClaimedDishes } from "@/lib/food";
@@ -39,8 +42,10 @@ export default async function PoojaRegistrationPage() {
   const events = await getEvents();
   // Every pooja-registrable day, past included — a day that's already
   // happened still shows who registered for it, it just no longer offers
-  // the form (see isPastDay below).
-  const days = getPoojaRegistrableDays(dedupeByDay(events));
+  // the form (see isPastDay below). Today and what's still ahead lead;
+  // past days are pushed behind a "Past days" divider (firstPastDayIndex).
+  const days = orderByRelevance(getPoojaRegistrableDays(dedupeByDay(events)));
+  const firstPastDayIndex = days.findIndex((day) => isPastDay(day));
   // Fetches claimed-dish counts too, not just registration counts — the
   // accordion header shows both signals for every day (see DayStatLine)
   // so picking a day here means weighing Food registration's numbers too,
@@ -87,18 +92,29 @@ export default async function PoojaRegistrationPage() {
           </div>
 
           <div className="mt-6 flex flex-col gap-3">
-            {days.map((day) => {
+            {days.map((day, index) => {
               const capacity = getPoojaCapacity(detailsByDay.get(day.id) ?? []);
               const isPast = isPastDay(day);
+              const today = !isPast && isToday(day);
 
               return (
+                <Fragment key={day.id}>
+                  {index === firstPastDayIndex && (
+                    <h2 className="mt-2 border-t border-border pt-6 text-xs font-semibold uppercase tracking-wide text-muted">
+                      Past days
+                    </h2>
+                  )}
                 <DayAccordionItem
-                  key={day.id}
                   dayNumber={day.day_number}
                   header={
                     <div>
                       <h2 className="text-sm font-semibold uppercase tracking-wide text-accent">
                         Day {day.day_number} — {formatDate(day.start_time)}
+                        {today && (
+                          <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-xs font-medium normal-case tracking-normal text-primary-contrast">
+                            Today
+                          </span>
+                        )}
                         {(isPast || capacity.closed) && (
                           <span className="ml-2 rounded-full bg-surface-muted px-2 py-0.5 text-xs font-medium normal-case tracking-normal text-muted ring-1 ring-border">
                             {isPast ? "Event passed" : "Bookings closed"}
@@ -154,6 +170,7 @@ export default async function PoojaRegistrationPage() {
                     </Link>
                   )}
                 </DayAccordionItem>
+                </Fragment>
               );
             })}
           </div>

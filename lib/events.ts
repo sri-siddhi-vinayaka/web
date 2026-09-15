@@ -127,6 +127,24 @@ export function isPastDay(day: EventItem, now: Date = new Date()): boolean {
   return calendarDateKey(new Date(day.start_time)) < calendarDateKey(now);
 }
 
+export function isToday(day: EventItem, now: Date = new Date()): boolean {
+  return calendarDateKey(new Date(day.start_time)) === calendarDateKey(now);
+}
+
+// Reorders a chronologically-sorted day list so today and every day still
+// ahead lead (in their original order), with past days pushed to the end
+// (also in their original order) rather than interleaved — what's relevant
+// right now should be the first thing visitors see, not buried below a
+// week of days that have already happened. Used by /schedule,
+// /register/pooja, and /register/food; each caller is responsible for
+// rendering a "Past days" divider at the point this returns the first past
+// day (see isPastDay).
+export function orderByRelevance<T extends EventItem>(days: T[], now: Date = new Date()): T[] {
+  const upcoming = days.filter((day) => !isPastDay(day, now));
+  const past = days.filter((day) => isPastDay(day, now));
+  return [...upcoming, ...past];
+}
+
 // The festival's first and last days (Ganesh Sthapana and the final
 // pooja/Ladoo celebration) have their Pooja itself run entirely by the
 // admin team — no public sign-up for that specific ritual on either day.

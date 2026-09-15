@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Fragment } from "react";
 import ClaimedDishesList from "@/components/ClaimedDishesList";
 import DayAccordionItem from "@/components/DayAccordionItem";
 import DayCalendarStrip from "@/components/DayCalendarStrip";
@@ -13,6 +14,8 @@ import {
   getPoojaRegistrableDays,
   getRegisteredDetails,
   isPastDay,
+  isToday,
+  orderByRelevance,
 } from "@/lib/events";
 import { getClaimedDishes } from "@/lib/food";
 
@@ -42,7 +45,10 @@ export default async function FoodRegistrationPage() {
   // registration open, to decide whether the cross-link below makes sense
   // for a given day. Every day shows, past included — see isPastDay below
   // for why registering is closed there while the claimed-dish list stays.
-  const days = dedupedDays;
+  // Today and what's still ahead lead; past days are pushed behind a "Past
+  // days" divider (firstPastDayIndex).
+  const days = orderByRelevance(dedupedDays);
+  const firstPastDayIndex = days.findIndex((day) => isPastDay(day));
   const poojaRegistrableDayNumbers = new Set(
     getPoojaRegistrableDays(dedupedDays).map((day) => day.day_number)
   );
@@ -90,17 +96,28 @@ export default async function FoodRegistrationPage() {
           </div>
 
           <div className="mt-6 flex flex-col gap-3">
-            {days.map((day) => {
+            {days.map((day, index) => {
               const isPast = isPastDay(day);
+              const today = !isPast && isToday(day);
 
               return (
+                <Fragment key={day.id}>
+                  {index === firstPastDayIndex && (
+                    <h2 className="mt-2 border-t border-border pt-6 text-xs font-semibold uppercase tracking-wide text-muted">
+                      Past days
+                    </h2>
+                  )}
                 <DayAccordionItem
-                  key={day.id}
                   dayNumber={day.day_number}
                   header={
                     <div>
                       <h2 className="text-sm font-semibold uppercase tracking-wide text-accent">
                         Day {day.day_number} — {formatDate(day.start_time)}
+                        {today && (
+                          <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-xs font-medium normal-case tracking-normal text-primary-contrast">
+                            Today
+                          </span>
+                        )}
                         {isPast && (
                           <span className="ml-2 rounded-full bg-surface-muted px-2 py-0.5 text-xs font-medium normal-case tracking-normal text-muted ring-1 ring-border">
                             Event passed
@@ -142,6 +159,7 @@ export default async function FoodRegistrationPage() {
                     </Link>
                   )}
                 </DayAccordionItem>
+                </Fragment>
               );
             })}
           </div>

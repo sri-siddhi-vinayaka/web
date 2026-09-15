@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Fragment } from "react";
 import ClaimedDishesList from "@/components/ClaimedDishesList";
 import RegisteredDetailsTable from "@/components/RegisteredDetailsTable";
 import RegistrationCount from "@/components/RegistrationCount";
@@ -10,6 +11,8 @@ import {
   getRegisteredDetails,
   isLiveDarshanActive,
   isPastDay,
+  isToday,
+  orderByRelevance,
   POOJA_SLOTS_PER_DAY,
 } from "@/lib/events";
 import { getClaimedDishes } from "@/lib/food";
@@ -95,11 +98,6 @@ export default async function SchedulePage() {
   const dayNumbers = [...days.keys()];
   const firstDay = Math.min(...dayNumbers);
   const lastDay = Math.max(...dayNumbers);
-  const detailsByEvent = new Map(
-    await Promise.all(
-      events.map(async (event) => [event.id, await getRegisteredDetails(event.id)] as const)
-    )
-  );
 
   // Both registration flows register per day, not per event row —
   // dedupeByDay picks the same representative event per day_number that
@@ -109,6 +107,21 @@ export default async function SchedulePage() {
   // against that one event's data rather than summed across every event on
   // the day.
   const dayRepresentativeEvent = new Map(dedupeByDay(events).map((event) => [event.day_number, event]));
+
+  // What's relevant right now (today, then what's still ahead) leads;
+  // days that already happened are pushed to the end, behind a "Past
+  // days" divider — see firstPastDayIndex below.
+  const orderedDayNumbers = orderByRelevance([...dayRepresentativeEvent.values()]).map(
+    (event) => event.day_number
+  );
+  const firstPastDayIndex = orderedDayNumbers.findIndex((dayNumber) => isPastDay(days.get(dayNumber)![0]));
+
+  const detailsByEvent = new Map(
+    await Promise.all(
+      events.map(async (event) => [event.id, await getRegisteredDetails(event.id)] as const)
+    )
+  );
+
   const poojaCapacityByDay = new Map(
     [...dayRepresentativeEvent.entries()]
       .filter(([dayNumber]) => dayNumber !== firstDay && dayNumber !== lastDay)
@@ -130,13 +143,26 @@ export default async function SchedulePage() {
       <h1 className="text-2xl font-bold text-brand">Festival Schedule</h1>
       <p className="mt-1 text-sm text-muted">{FESTIVAL_DATE_RANGE}</p>
       <div className="mt-6 flex flex-col gap-8">
-        {[...days.entries()].map(([dayNumber, dayEvents]) => {
+        {orderedDayNumbers.map((dayNumber, index) => {
+          const dayEvents = days.get(dayNumber)!;
           const dayIsPast = isPastDay(dayEvents[0]);
+          const dayIsToday = !dayIsPast && isToday(dayEvents[0]);
 
           return (
-          <section key={dayNumber}>
+          <Fragment key={dayNumber}>
+            {index === firstPastDayIndex && (
+              <h2 className="mt-2 border-t border-border pt-6 text-xs font-semibold uppercase tracking-wide text-muted">
+                Past days
+              </h2>
+            )}
+          <section>
             <h2 className="text-sm font-semibold uppercase tracking-wide text-accent">
-              Day {dayNumber}
+              Day {dayNumber} — {formatDay(new Date(dayEvents[0].start_time))}
+              {dayIsToday && (
+                <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-xs font-medium normal-case tracking-normal text-primary-contrast">
+                  Today
+                </span>
+              )}
             </h2>
             <ul className="mt-3 flex flex-col gap-3">
               {dayEvents.map((event) => (
@@ -273,6 +299,7 @@ export default async function SchedulePage() {
               )}
             </div>
           </section>
+          </Fragment>
           );
         })}
       </div>
