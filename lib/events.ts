@@ -207,6 +207,38 @@ export async function getRegistrationCount(eventId: string): Promise<number> {
 
 export type RegisteredDetail = { name: string; adult_count: number; child_count: number };
 
+// Display-only capacity signal for the schedule/registration pages — not
+// enforced server-side. register_for_event() always inserts as 'pending'
+// regardless of how full a day looks (see
+// supabase/migrations/20260913020000_adult_child_optional_phone_food_size.sql);
+// admin still reviews and confirms/waitlists every sign-up by hand. This
+// just tells visitors up front when a day is effectively full so they don't
+// bother filling out a form that's very unlikely to get a confirmed slot.
+//
+// A day is "full" once it already has POOJA_SLOTS_PER_DAY confirmed
+// registrations (families) OR their combined adult headcount exceeds
+// POOJA_ADULT_CAP_PER_DAY — whichever happens first. Two confirmed families
+// of 4 adults each (8 total) should close a day even though that's still
+// only 2 "slots"; a single confirmed family of 7 should close it too, even
+// though technically only 1 of the 2 slots is used.
+export const POOJA_SLOTS_PER_DAY = 2;
+export const POOJA_ADULT_CAP_PER_DAY = 6;
+
+export type PoojaCapacity =
+  | { closed: true }
+  | { closed: false; spotsRemaining: number };
+
+export function getPoojaCapacity(details: RegisteredDetail[]): PoojaCapacity {
+  const slotsUsed = details.length;
+  const adultsConfirmed = details.reduce((sum, detail) => sum + detail.adult_count, 0);
+
+  if (slotsUsed >= POOJA_SLOTS_PER_DAY || adultsConfirmed > POOJA_ADULT_CAP_PER_DAY) {
+    return { closed: true };
+  }
+
+  return { closed: false, spotsRemaining: POOJA_SLOTS_PER_DAY - slotsUsed };
+}
+
 // Name + adult/child breakdown (never phone numbers) are deliberately
 // public per day — visitors can see who's already registered and how many
 // people, the same way the Food flow shows claimed dishes. Goes through

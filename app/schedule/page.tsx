@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import RegistrationCount from "@/components/RegistrationCount";
-import { getEvents, getRegistrationCount, isLiveDarshanActive } from "@/lib/events";
+import {
+  dedupeByDay,
+  getEvents,
+  getPoojaCapacity,
+  getRegisteredDetails,
+  getRegistrationCount,
+  isLiveDarshanActive,
+  POOJA_SLOTS_PER_DAY,
+} from "@/lib/events";
 import { FESTIVAL_END, FESTIVAL_START } from "@/lib/config";
 import type { EventItem } from "@/types";
 
@@ -79,6 +87,22 @@ export default async function SchedulePage() {
     )
   );
 
+  // Pooja capacity is per day, not per event row — dedupeByDay picks the
+  // same representative event per day_number that /register/pooja#day-N
+  // actually registers against (see getPoojaRegistrableDays), so capacity
+  // is checked against that event's confirmed registrations rather than
+  // summed across every event on the day.
+  const poojaCapacityByDay = new Map(
+    await Promise.all(
+      dedupeByDay(events)
+        .filter((event) => event.day_number !== firstDay && event.day_number !== lastDay)
+        .map(async (event) => {
+          const details = await getRegisteredDetails(event.id);
+          return [event.day_number, getPoojaCapacity(details)] as const;
+        })
+    )
+  );
+
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
       <h1 className="text-2xl font-bold text-brand">Festival Schedule</h1>
@@ -117,14 +141,37 @@ export default async function SchedulePage() {
                 skipped for the structurally first/last day — Food
                 registration has no such restriction and shows every day. */}
             <div className="mt-3 flex flex-wrap gap-2">
-              {dayNumber !== firstDay && dayNumber !== lastDay && (
-                <Link
-                  href={`/register/pooja#day-${dayNumber}`}
-                  className="min-h-11 flex-1 rounded-lg bg-primary px-3 py-2 text-center text-sm font-medium text-primary-contrast transition-colors hover:opacity-90"
-                >
-                  Pooja Registration
-                </Link>
-              )}
+              {dayNumber !== firstDay && dayNumber !== lastDay && (() => {
+                const capacity = poojaCapacityByDay.get(dayNumber);
+
+                // Bookings closed: no point showing a link into a form that
+                // won't get a confirmed spot — replace it with a plain,
+                // non-interactive notice instead of a disabled-looking link.
+                if (capacity?.closed) {
+                  return (
+                    <span className="flex min-h-11 flex-1 items-center justify-center rounded-lg bg-surface-muted px-3 py-2 text-center text-sm font-medium text-muted ring-1 ring-border">
+                      Pooja Registration — Bookings closed
+                    </span>
+                  );
+                }
+
+                return (
+                  <div className="flex-1">
+                    <Link
+                      href={`/register/pooja#day-${dayNumber}`}
+                      className="flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-3 py-2 text-center text-sm font-medium text-primary-contrast transition-colors hover:opacity-90"
+                    >
+                      Pooja Registration
+                    </Link>
+                    {capacity && capacity.spotsRemaining < POOJA_SLOTS_PER_DAY && (
+                      <p className="mt-1 text-center text-xs text-muted">
+                        {capacity.spotsRemaining} more registration{" "}
+                        {capacity.spotsRemaining === 1 ? "spot" : "spots"} available
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
               <Link
                 href={`/register/food#day-${dayNumber}`}
                 className="min-h-11 flex-1 rounded-lg bg-surface-muted px-3 py-2 text-center text-sm font-medium text-foreground ring-1 ring-border transition-colors hover:bg-border"

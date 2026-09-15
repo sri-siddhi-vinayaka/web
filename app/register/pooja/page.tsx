@@ -10,10 +10,12 @@ import RegistrationForm from "@/components/RegistrationForm";
 import {
   dedupeByDay,
   getEvents,
+  getPoojaCapacity,
   getRegisteredDetails,
   getRegistrationCount,
   getPoojaRegistrableDays,
   getUpcomingDays,
+  POOJA_SLOTS_PER_DAY,
 } from "@/lib/events";
 import { getClaimedDishes } from "@/lib/food";
 
@@ -86,42 +88,67 @@ export default async function PoojaRegistrationPage() {
           </div>
 
           <div className="mt-6 flex flex-col gap-3">
-            {days.map((day) => (
-              <DayAccordionItem
-                key={day.id}
-                dayNumber={day.day_number}
-                header={
-                  <div>
-                    <h2 className="text-sm font-semibold uppercase tracking-wide text-accent">
-                      Day {day.day_number} — {formatDate(day.start_time)}
-                    </h2>
-                    <DayStatLine
-                      eventId={day.id}
-                      initialRegisteredCount={countsByDay.get(day.id) ?? 0}
-                      initialDishCount={dishCountsByDay.get(day.id) ?? 0}
-                    />
-                  </div>
-                }
-              >
-                <div>
-                  <h3 className="text-sm font-medium text-foreground">Already secured by</h3>
-                  <div className="mt-2">
-                    <RegisteredDetailsTable eventId={day.id} initialDetails={detailsByDay.get(day.id) ?? []} />
-                  </div>
-                </div>
+            {days.map((day) => {
+              const capacity = getPoojaCapacity(detailsByDay.get(day.id) ?? []);
 
-                <div className="mt-4">
-                  <RegistrationForm eventId={day.id} eventTitle={`Day ${day.day_number}`} />
-                </div>
-
-                <Link
-                  href={`/register/food#day-${day.day_number}`}
-                  className="mt-4 inline-block text-sm font-medium text-primary underline underline-offset-2"
+              return (
+                <DayAccordionItem
+                  key={day.id}
+                  dayNumber={day.day_number}
+                  header={
+                    <div>
+                      <h2 className="text-sm font-semibold uppercase tracking-wide text-accent">
+                        Day {day.day_number} — {formatDate(day.start_time)}
+                        {capacity.closed && (
+                          <span className="ml-2 rounded-full bg-surface-muted px-2 py-0.5 text-xs font-medium normal-case tracking-normal text-muted ring-1 ring-border">
+                            Bookings closed
+                          </span>
+                        )}
+                      </h2>
+                      <DayStatLine
+                        eventId={day.id}
+                        initialRegisteredCount={countsByDay.get(day.id) ?? 0}
+                        initialDishCount={dishCountsByDay.get(day.id) ?? 0}
+                      />
+                    </div>
+                  }
                 >
-                  Bringing food too? Switch to Food Registration for this day →
-                </Link>
-              </DayAccordionItem>
-            ))}
+                  <div>
+                    <h3 className="text-sm font-medium text-foreground">Already secured by</h3>
+                    <div className="mt-2">
+                      <RegisteredDetailsTable eventId={day.id} initialDetails={detailsByDay.get(day.id) ?? []} />
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    {capacity.closed ? (
+                      <p className="rounded-xl bg-surface-muted p-4 text-sm font-medium text-foreground ring-1 ring-border">
+                        Pooja registration for this day is full — bookings are closed.
+                        Contact the admin team directly if you&apos;d still like to be
+                        added to the waitlist.
+                      </p>
+                    ) : (
+                      <>
+                        {capacity.spotsRemaining < POOJA_SLOTS_PER_DAY && (
+                          <p className="mb-2 text-sm text-muted">
+                            {capacity.spotsRemaining} more registration{" "}
+                            {capacity.spotsRemaining === 1 ? "spot" : "spots"} available.
+                          </p>
+                        )}
+                        <RegistrationForm eventId={day.id} eventTitle={`Day ${day.day_number}`} />
+                      </>
+                    )}
+                  </div>
+
+                  <Link
+                    href={`/register/food#day-${day.day_number}`}
+                    className="mt-4 inline-block text-sm font-medium text-primary underline underline-offset-2"
+                  >
+                    Bringing food too? Switch to Food Registration for this day →
+                  </Link>
+                </DayAccordionItem>
+              );
+            })}
           </div>
         </>
       )}
