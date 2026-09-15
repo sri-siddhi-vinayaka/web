@@ -54,6 +54,14 @@ Editor by hand, in filename order.
 Steps 1-5 need this project's own dashboard/account access, so they're not
 something this repo's automation can do on its own.
 
+## Test data for staging
+
+`supabase/seed-testing/` holds hand-run SQL scripts with fake data for
+exercising a feature on staging before merging — never migrations, never
+run against production. Paste the contents into the staging project's SQL
+Editor when you want the scenario, and see each script's own header for how
+to clear it back out afterward.
+
 ## Conventions
 
 - One file per change, timestamp-prefixed by the CLI:

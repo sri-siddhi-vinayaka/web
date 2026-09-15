@@ -1,7 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Fragment } from "react";
+import ClaimedDishesList from "@/components/ClaimedDishesList";
+import RegisteredDetailsTable from "@/components/RegisteredDetailsTable";
 import RegistrationCount from "@/components/RegistrationCount";
-import { getEvents, getRegistrationCount, isLiveDarshanActive } from "@/lib/events";
+import {
+  dedupeByDay,
+  getEvents,
+  getPoojaCapacity,
+  getRegisteredDetails,
+  isLiveDarshanActive,
+  isPastDay,
+  isToday,
+  orderByRelevance,
+  POOJA_SLOTS_PER_DAY,
+} from "@/lib/events";
+import { getClaimedDishes } from "@/lib/food";
 import { FESTIVAL_END, FESTIVAL_START } from "@/lib/config";
 import type { EventItem } from "@/types";
 
@@ -53,6 +67,17 @@ function groupByDay(events: EventItem[]): Map<number, EventItem[]> {
   return days;
 }
 
+// Shared look for a registration link that isn't clickable right now
+// (either the day's already past, or Pooja hit capacity) — a plain notice
+// instead of a disabled-looking link.
+function ClosedNotice({ label }: { label: string }) {
+  return (
+    <span className="flex min-h-11 flex-1 items-center justify-center rounded-lg bg-surface-muted px-3 py-2 text-center text-sm font-medium text-muted ring-1 ring-border">
+      {label}
+    </span>
+  );
+}
+
 export default async function SchedulePage() {
   const events = await getEvents();
 
@@ -73,9 +98,43 @@ export default async function SchedulePage() {
   const dayNumbers = [...days.keys()];
   const firstDay = Math.min(...dayNumbers);
   const lastDay = Math.max(...dayNumbers);
-  const counts = new Map(
+
+  // Both registration flows register per day, not per event row —
+  // dedupeByDay picks the same representative event per day_number that
+  // /register/pooja#day-N and /register/food#day-N actually register
+  // against (see getPoojaRegistrableDays / FoodRegistrationPage), so
+  // capacity, "who's registered", and claimed dishes are all checked
+  // against that one event's data rather than summed across every event on
+  // the day.
+  const dayRepresentativeEvent = new Map(dedupeByDay(events).map((event) => [event.day_number, event]));
+
+  // What's relevant right now (today, then what's still ahead) leads;
+  // days that already happened are pushed to the end, behind a "Past
+  // days" divider — see firstPastDayIndex below.
+  const orderedDayNumbers = orderByRelevance([...dayRepresentativeEvent.values()]).map(
+    (event) => event.day_number
+  );
+  const firstPastDayIndex = orderedDayNumbers.findIndex((dayNumber) => isPastDay(days.get(dayNumber)![0]));
+
+  const detailsByEvent = new Map(
     await Promise.all(
-      events.map(async (event) => [event.id, await getRegistrationCount(event.id)] as const)
+      events.map(async (event) => [event.id, await getRegisteredDetails(event.id)] as const)
+    )
+  );
+
+  const poojaCapacityByDay = new Map(
+    [...dayRepresentativeEvent.entries()]
+      .filter(([dayNumber]) => dayNumber !== firstDay && dayNumber !== lastDay)
+      .map(([dayNumber, event]) => [dayNumber, getPoojaCapacity(detailsByEvent.get(event.id) ?? [])] as const)
+  );
+  // Food registration takes sign-ups every day, including day 1/12 (unlike
+  // Pooja) — see getPoojaRegistrableDays' comment — so this isn't filtered
+  // the way poojaCapacityByDay is.
+  const dishesByDay = new Map(
+    await Promise.all(
+      [...dayRepresentativeEvent.entries()].map(
+        async ([dayNumber, event]) => [dayNumber, await getClaimedDishes(event.id)] as const
+      )
     )
   );
 
@@ -84,10 +143,26 @@ export default async function SchedulePage() {
       <h1 className="text-2xl font-bold text-brand">Festival Schedule</h1>
       <p className="mt-1 text-sm text-muted">{FESTIVAL_DATE_RANGE}</p>
       <div className="mt-6 flex flex-col gap-8">
-        {[...days.entries()].map(([dayNumber, dayEvents]) => (
-          <section key={dayNumber}>
+        {orderedDayNumbers.map((dayNumber, index) => {
+          const dayEvents = days.get(dayNumber)!;
+          const dayIsPast = isPastDay(dayEvents[0]);
+          const dayIsToday = !dayIsPast && isToday(dayEvents[0]);
+
+          return (
+          <Fragment key={dayNumber}>
+            {index === firstPastDayIndex && (
+              <h2 className="mt-2 border-t border-border pt-6 text-xs font-semibold uppercase tracking-wide text-muted">
+                Past days
+              </h2>
+            )}
+          <section>
             <h2 className="text-sm font-semibold uppercase tracking-wide text-accent">
-              Day {dayNumber}
+              Day {dayNumber} — {formatDay(new Date(dayEvents[0].start_time))}
+              {dayIsToday && (
+                <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-xs font-medium normal-case tracking-normal text-primary-contrast">
+                  Today
+                </span>
+              )}
             </h2>
             <ul className="mt-3 flex flex-col gap-3">
               {dayEvents.map((event) => (
@@ -102,11 +177,60 @@ export default async function SchedulePage() {
                   )}
                   <RegistrationCount
                     eventId={event.id}
-                    initialCount={counts.get(event.id) ?? 0}
+                    initialDetails={detailsByEvent.get(event.id) ?? []}
                   />
                 </li>
               ))}
             </ul>
+
+            {/* Names are public once confirmed specifically so people can
+                see who else is going and coordinate with friends — see the
+                privacy notice on /register/pooja. Shown once per day (not
+                per event, same reasoning as the registration links below)
+                and only for days that actually take Pooja sign-ups. This is
+                an overview page, not the registration flow itself, so an
+                empty day says nothing here rather than nudging with
+                RegisteredDetailsTable's "be the first!" default — that
+                encouragement belongs next to the form on /register/pooja,
+                not repeated down a list of mostly-empty future days. */}
+            {dayNumber !== firstDay && dayNumber !== lastDay && (() => {
+              const details = detailsByEvent.get(dayRepresentativeEvent.get(dayNumber)!.id) ?? [];
+              if (details.length === 0) return null;
+
+              return (
+                <div className="mt-3">
+                  <h3 className="text-xs font-medium text-foreground">Already registered</h3>
+                  <div className="mt-1">
+                    <RegisteredDetailsTable
+                      eventId={dayRepresentativeEvent.get(dayNumber)!.id}
+                      initialDetails={details}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Same reasoning as above, for claimed dishes — dish names are
+                public the same way registrant names are (see
+                food_registrations' claimed_dishes() RPC). Every day takes
+                Food sign-ups, including day 1/12, so unlike the block above
+                this isn't gated to pooja-registrable days. */}
+            {(() => {
+              const dishes = dishesByDay.get(dayNumber) ?? [];
+              if (dishes.length === 0) return null;
+
+              return (
+                <div className="mt-3">
+                  <h3 className="text-xs font-medium text-foreground">Dishes already claimed</h3>
+                  <div className="mt-1">
+                    <ClaimedDishesList
+                      eventId={dayRepresentativeEvent.get(dayNumber)!.id}
+                      initialDishes={dishes}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* One registration link set per day, not per event — a day can
                 carry more than one event (the pooja itself, plus e.g. a
@@ -117,20 +241,48 @@ export default async function SchedulePage() {
                 skipped for the structurally first/last day — Food
                 registration has no such restriction and shows every day. */}
             <div className="mt-3 flex flex-wrap gap-2">
-              {dayNumber !== firstDay && dayNumber !== lastDay && (
+              {dayNumber !== firstDay && dayNumber !== lastDay && (() => {
+                // A day that's already happened no longer takes
+                // registrations, full or not — check that before capacity.
+                if (dayIsPast) {
+                  return <ClosedNotice label="Pooja Registration — This day has passed" />;
+                }
+
+                const capacity = poojaCapacityByDay.get(dayNumber);
+
+                // Bookings closed: no point showing a link into a form that
+                // won't get a confirmed spot.
+                if (capacity?.closed) {
+                  return <ClosedNotice label="Pooja Registration — Bookings closed" />;
+                }
+
+                return (
+                  <div className="flex-1">
+                    <Link
+                      href={`/register/pooja#day-${dayNumber}`}
+                      className="flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-3 py-2 text-center text-sm font-medium text-primary-contrast transition-colors hover:opacity-90"
+                    >
+                      Pooja Registration
+                    </Link>
+                    {capacity && capacity.spotsRemaining < POOJA_SLOTS_PER_DAY && (
+                      <p className="mt-1 text-center text-xs text-muted">
+                        {capacity.spotsRemaining} more registration{" "}
+                        {capacity.spotsRemaining === 1 ? "spot" : "spots"} available
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
+              {dayIsPast ? (
+                <ClosedNotice label="Food Registration — This day has passed" />
+              ) : (
                 <Link
-                  href={`/register/pooja#day-${dayNumber}`}
-                  className="min-h-11 flex-1 rounded-lg bg-primary px-3 py-2 text-center text-sm font-medium text-primary-contrast transition-colors hover:opacity-90"
+                  href={`/register/food#day-${dayNumber}`}
+                  className="min-h-11 flex-1 rounded-lg bg-surface-muted px-3 py-2 text-center text-sm font-medium text-foreground ring-1 ring-border transition-colors hover:bg-border"
                 >
-                  Pooja Registration
+                  Food Registration
                 </Link>
               )}
-              <Link
-                href={`/register/food#day-${dayNumber}`}
-                className="min-h-11 flex-1 rounded-lg bg-surface-muted px-3 py-2 text-center text-sm font-medium text-foreground ring-1 ring-border transition-colors hover:bg-border"
-              >
-                Food Registration
-              </Link>
               {/* Day 1 only — that's where the live stream starts (see
                   LIVE_STREAM_URL in lib/config.ts). Points at our own /live
                   page rather than the raw YouTube URL directly, same as
@@ -147,7 +299,9 @@ export default async function SchedulePage() {
               )}
             </div>
           </section>
-        ))}
+          </Fragment>
+          );
+        })}
       </div>
     </div>
   );
