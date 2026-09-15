@@ -206,14 +206,13 @@ export async function deleteEventAction(id: string): Promise<void> {
 // sign-up path and always inserts as pending, which isn't what a manual
 // decision should do.
 //
-// Broadcasts a push notification on confirm/waitlist — same
+// Broadcasts a push notification on confirm only — same
 // sendPushToAllSubscribers() used for new announcements, so it goes to
 // every subscriber, not just the registrant (push_subscriptions has no
 // link to who registered; see its migration). The registrant's name is
-// included for a confirmation, since a confirmed name is already public
-// (registered_details()) — but never for a waitlisting, which isn't
-// public anywhere else. Reverting someone to 'pending' is a correction,
-// not news, so that transition stays silent.
+// included since a confirmed name is already public (registered_details()).
+// Waitlisting and reverting someone to 'pending' both stay silent —
+// neither is the news a confirmation is.
 export async function setRegistrationStatusAction(
   id: string,
   status: "pending" | "confirmed" | "waitlisted"
@@ -232,22 +231,16 @@ export async function setRegistrationStatusAction(
   revalidatePath("/register/food");
   revalidatePath("/schedule");
 
+  if (status !== "confirmed") return;
+
   const dayNumber = (updated?.events as unknown as { day_number: number } | null)?.day_number;
   if (dayNumber == null) return;
 
-  if (status === "confirmed") {
-    await sendPushToAllSubscribers(
-      "Pooja Registration Confirmed",
-      `${updated?.name ?? "A registration"}'s spot for Day ${dayNumber} is confirmed!`,
-      "/register/pooja"
-    );
-  } else if (status === "waitlisted") {
-    await sendPushToAllSubscribers(
-      "Pooja Registration Update",
-      `A registration for Day ${dayNumber} has been waitlisted — check /register/pooja for open spots.`,
-      "/register/pooja"
-    );
-  }
+  await sendPushToAllSubscribers(
+    "Pooja Registration Confirmed",
+    `${updated?.name ?? "A registration"}'s spot for Day ${dayNumber} is confirmed!`,
+    "/register/pooja"
+  );
 }
 
 export async function deleteRegistrationAction(id: string): Promise<void> {
