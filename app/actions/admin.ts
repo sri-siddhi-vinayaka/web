@@ -248,6 +248,16 @@ export async function deleteRegistrationAction(id: string): Promise<void> {
   await supabaseAdmin.from("registrations").delete().eq("id", id);
   revalidatePath("/admin");
   revalidatePath("/register/pooja");
+  revalidatePath("/register/food");
+  revalidatePath("/schedule");
+}
+
+export async function deleteFoodRegistrationAction(id: string): Promise<void> {
+  await requireAdmin();
+  await supabaseAdmin.from("food_registrations").delete().eq("id", id);
+  revalidatePath("/admin");
+  revalidatePath("/register/food");
+  revalidatePath("/schedule");
 }
 
 export async function deleteSuggestionAction(id: string): Promise<void> {
