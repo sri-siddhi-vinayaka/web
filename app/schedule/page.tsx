@@ -165,7 +165,13 @@ export default async function SchedulePage() {
                 Past days
               </h2>
             )}
-          <section>
+          {/* scroll-mt accounts for SiteHeader's sticky h-14 bar so a jump
+              to #day-N doesn't land the heading underneath it. Same anchor
+              id scheme as the #day-N hashes /register/pooja and
+              /register/food already use, just applied to this page too, so
+              e.g. an announcement can deep-link straight to a specific
+              day. */}
+          <section id={`day-${dayNumber}`} className="scroll-mt-20">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-accent">
               Day {dayNumber} — {formatDay(new Date(dayEvents[0].start_time))}
               {dayIsToday && (
