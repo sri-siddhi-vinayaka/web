@@ -1,9 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import AcknowledgeAnnouncement from "@/components/AcknowledgeAnnouncement";
 import { getAnnouncements } from "@/lib/events";
 
 export const metadata: Metadata = { title: "Announcements" };
+
+// acknowledge_announcement() (see
+// supabase/migrations/20260916205900_announcement_acknowledgements.sql) is a
+// public write with no admin action to hang a revalidation off — same
+// reasoning as / and /schedule's own force-dynamic exports — so static
+// prerendering would freeze every announcement's ack_count to whatever it
+// was at the last deploy or admin-triggered revalidation.
+export const dynamic = "force-dynamic";
 
 // An in-app relative path written inline in an announcement's body (e.g.
 // "/schedule#day-5") renders as a real, tappable link instead of literal
@@ -58,6 +67,10 @@ export default async function AnnouncementsPage() {
                   year: "numeric",
                 })}
               </p>
+              <AcknowledgeAnnouncement
+                announcementId={announcement.id}
+                initialCount={announcement.ack_count}
+              />
             </li>
           ))}
         </ul>

@@ -26,6 +26,9 @@ export type Announcement = {
   title: string;
   body: string;
   created_at: string;
+  // Public "Got it" tap count — see
+  // supabase/migrations/20260916205900_announcement_acknowledgements.sql.
+  ack_count: number;
 };
 
 export type GalleryItem = {
