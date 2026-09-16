@@ -4,6 +4,10 @@ export type EventItem = {
   day_number: number;
   start_time: string; // ISO timestamp
   description: string;
+  // Root-relative path into public/flyers/ (e.g. "/flyers/food-event.jpeg"),
+  // not a Supabase Storage URL — see
+  // supabase/migrations/20260916190000_add_event_flyer_url.sql.
+  flyer_url: string | null;
 };
 
 export type Registration = {
