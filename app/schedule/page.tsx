@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { Fragment } from "react";
 import ClaimedDishesList from "@/components/ClaimedDishesList";
@@ -201,6 +202,16 @@ export default async function SchedulePage() {
                   <p className="text-sm text-muted">{formatTime(event.start_time)}</p>
                   {event.description && (
                     <p className="mt-1 text-sm text-muted">{event.description}</p>
+                  )}
+                  {event.flyer_url && (
+                    <Image
+                      src={event.flyer_url}
+                      alt={`${event.title} flyer`}
+                      width={900}
+                      height={1600}
+                      sizes="(min-width: 640px) 640px, 100vw"
+                      className="mt-2 h-auto w-full rounded-xl ring-1 ring-border"
+                    />
                   )}
                   <RegistrationCount
                     eventId={event.id}
