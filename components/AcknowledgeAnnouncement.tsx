@@ -81,6 +81,7 @@ export default function AcknowledgeAnnouncement({
       onClick={handleClick}
       disabled={acknowledged}
       aria-pressed={acknowledged}
+      aria-label={acknowledged ? "Acknowledged" : "Acknowledge this announcement"}
       className={`mt-2 flex min-h-11 items-center gap-1.5 rounded-full px-3 text-sm font-medium ring-1 transition-colors ${
         acknowledged
           ? "bg-primary/10 text-primary ring-primary/30"
@@ -88,8 +89,7 @@ export default function AcknowledgeAnnouncement({
       }`}
     >
       <span aria-hidden="true">👍</span>
-      {acknowledged ? "Got it" : "Got it?"}
-      {count > 0 && <span className="text-muted">· {count}</span>}
+      {count > 0 && <span className="text-muted">{count}</span>}
     </button>
   );
 }
