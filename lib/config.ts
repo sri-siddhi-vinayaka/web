@@ -36,9 +36,12 @@ export const INSTAGRAM_REEL_URL = "https://www.instagram.com/reel/DdT869oijHB/?s
 // top of the structural first/last day (Sthapana, Ladoo celebration —
 // see getPoojaRegistrableDays in lib/events.ts, which excludes those two
 // on its own and this list in addition). Day 7 is Ganapati Homam, also
-// entirely admin-run. Food registration is untouched by this — it has no
-// such restriction on any day, this one included.
-export const ADMIN_RUN_POOJA_DAY_NUMBERS: number[] = [7];
+// entirely admin-run. Day 5's Pooja is a brief Nivedana offering to Lord
+// Ganesha ahead of Anna Prasadam (the food festival) that evening, not a
+// standalone ritual worth a public sign-up slot of its own. Food
+// registration is untouched by this — it has no such restriction on any
+// day, either of these included.
+export const ADMIN_RUN_POOJA_DAY_NUMBERS: number[] = [5, 7];
 
 export const VENUE_ADDRESS = "2526 Kilpeck Dr, Henrico, VA";
 export const VENUE_MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(VENUE_ADDRESS)}`;
