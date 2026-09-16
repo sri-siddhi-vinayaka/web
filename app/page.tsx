@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { ComponentType } from "react";
 import CountdownTimer from "@/components/CountdownTimer";
@@ -125,14 +126,30 @@ export default async function Home() {
             The full day-by-day schedule is being finalized — check back soon.
           </p>
         ) : (
-          <ul className="mt-3 flex flex-col gap-2">
-            {highlights.map((event) => (
-              <li key={event.id} className="text-sm text-muted">
-                <span className="font-medium text-foreground">{event.title}</span>
-                {" — "}
-                {formatTime(event.start_time)}
-              </li>
-            ))}
+          <ul className="mt-3 flex flex-col gap-3">
+            {highlights.map((event) =>
+              // The flyer already has the event's details written out —
+              // skip the title/time line for these and just show it,
+              // rather than repeating what it already says.
+              event.flyer_url ? (
+                <li key={event.id}>
+                  <Image
+                    src={event.flyer_url}
+                    alt={`${event.title} flyer`}
+                    width={900}
+                    height={1600}
+                    sizes="(min-width: 640px) 640px, 100vw"
+                    className="h-auto w-full rounded-xl ring-1 ring-border"
+                  />
+                </li>
+              ) : (
+                <li key={event.id} className="text-sm text-muted">
+                  <span className="font-medium text-foreground">{event.title}</span>
+                  {" — "}
+                  {formatTime(event.start_time)}
+                </li>
+              )
+            )}
           </ul>
         )}
         {/* Whoever's checking this section is plausibly on their way, so the
