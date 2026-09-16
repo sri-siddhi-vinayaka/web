@@ -100,11 +100,18 @@ export type CreateEventState =
 // below, which otherwise differ only in insert vs. update.
 function parseEventForm(
   formData: FormData
-): { title: string; dayNumber: number; startTime: Date; description: string } | { error: string } {
+):
+  | { title: string; dayNumber: number; startTime: Date; description: string; flyerUrl: string | null }
+  | { error: string } {
   const title = String(formData.get("title") ?? "").trim();
   const dayNumber = Number(formData.get("day_number"));
   const startTimeLocal = String(formData.get("start_time") ?? "");
   const description = String(formData.get("description") ?? "").trim();
+  // Root-relative path into public/flyers/, same as the flyer_url column
+  // itself (see supabase/migrations/20260916190000_add_event_flyer_url.sql)
+  // — a plain pasted path, same UX as Gallery's image_url field, not a file
+  // upload (no upload infra exists in this $0-budget app).
+  const flyerUrl = String(formData.get("flyer_url") ?? "").trim() || null;
 
   if (!title) return { error: "Title is required." };
   if (!Number.isInteger(dayNumber) || dayNumber < 1) {
@@ -117,7 +124,7 @@ function parseEventForm(
     return { error: "That start time couldn't be parsed." };
   }
 
-  return { title, dayNumber, startTime, description };
+  return { title, dayNumber, startTime, description, flyerUrl };
 }
 
 function revalidateEventPaths(): void {
@@ -147,6 +154,7 @@ export async function createEventAction(
     day_number: parsed.dayNumber,
     start_time: parsed.startTime.toISOString(),
     description: parsed.description,
+    flyer_url: parsed.flyerUrl,
   });
 
   if (error) {
@@ -173,6 +181,15 @@ export async function updateEventAction(
   const parsed = parseEventForm(formData);
   if ("error" in parsed) return { status: "error", message: parsed.error };
 
+  // Fetched before the update so the push condition below can tell "a
+  // flyer just appeared" (no flyer -> a flyer) apart from an ordinary edit
+  // to an event that already had one.
+  const { data: existing } = await supabaseAdmin
+    .from("events")
+    .select("flyer_url")
+    .eq("id", id)
+    .maybeSingle();
+
   const { error } = await supabaseAdmin
     .from("events")
     .update({
@@ -180,6 +197,7 @@ export async function updateEventAction(
       day_number: parsed.dayNumber,
       start_time: parsed.startTime.toISOString(),
       description: parsed.description,
+      flyer_url: parsed.flyerUrl,
     })
     .eq("id", id);
 
@@ -189,6 +207,21 @@ export async function updateEventAction(
   }
 
   revalidateEventPaths();
+
+  // Broadcasts a push notification the moment a flyer newly appears on an
+  // event — same "meaningful, deliberate moment" bar as the Announcement
+  // and registration-confirmed pushes above, not every routine edit.
+  // Removing or swapping an already-set flyer stays silent, same reasoning
+  // as setRegistrationStatusAction only pushing on confirm, not every
+  // status change.
+  if (!existing?.flyer_url && parsed.flyerUrl) {
+    await sendPushToAllSubscribers(
+      "New flyer added! 📌",
+      `${parsed.title} now has a flyer — check it out on the schedule.`,
+      "/schedule"
+    );
+  }
+
   return { status: "success" };
 }
 
