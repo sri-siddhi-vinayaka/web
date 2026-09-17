@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { ComponentType } from "react";
 import CountdownTimer from "@/components/CountdownTimer";
+import EventMenuButton from "@/components/EventMenuButton";
 import GaneshaPhoto from "@/components/GaneshaPhoto";
 import InstagramReelHighlight from "@/components/InstagramReelHighlight";
 import LiveDarshanHighlight from "@/components/LiveDarshanHighlight";
@@ -132,7 +133,7 @@ export default async function Home() {
               // skip the title/time line for these and just show it,
               // rather than repeating what it already says.
               event.flyer_url ? (
-                <li key={event.id}>
+                <li key={event.id} className="relative">
                   <Image
                     src={event.flyer_url}
                     alt={`${event.title} flyer`}
@@ -141,6 +142,16 @@ export default async function Home() {
                     sizes="(min-width: 640px) 640px, 100vw"
                     className="h-auto w-full rounded-xl ring-1 ring-border"
                   />
+                  {/* Floating, not inline next to a title — the flyer above
+                      has no title/time line to sit beside (see the comment
+                      above), so this overlays the image itself instead. */}
+                  {event.menu && (
+                    <EventMenuButton
+                      eventTitle={event.title}
+                      menu={event.menu}
+                      className="absolute bottom-3 right-3 flex h-11 w-11 items-center justify-center rounded-full bg-surface/90 text-foreground shadow-sm ring-1 ring-border backdrop-blur transition-colors hover:bg-surface"
+                    />
+                  )}
                 </li>
               ) : (
                 <li key={event.id} className="text-sm text-muted">

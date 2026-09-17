@@ -69,6 +69,13 @@ export default function EditEventForm({ event }: { event: EventItem }) {
         placeholder="Flyer path (optional, e.g. /flyers/day6.jpeg)"
         className="min-h-11 rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
       />
+      <textarea
+        name="menu"
+        defaultValue={event.menu ?? ""}
+        placeholder={"Menu (optional) — one course per line:\nCourse name: item, item, item"}
+        rows={3}
+        className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
+      />
 
       <div aria-live="polite">
         {state.status === "error" && (

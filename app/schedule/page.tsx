@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Fragment } from "react";
 import ClaimedDishesList from "@/components/ClaimedDishesList";
+import EventMenuButton from "@/components/EventMenuButton";
 import RegisteredDetailsTable from "@/components/RegisteredDetailsTable";
 import RegistrationCount from "@/components/RegistrationCount";
 import YouTubeIcon from "@/components/icons/YouTubeIcon";
@@ -203,6 +204,13 @@ export default async function SchedulePage() {
                       >
                         <YouTubeIcon className="h-4 w-4 shrink-0" />
                       </a>
+                    )}
+                    {event.menu && (
+                      <EventMenuButton
+                        eventTitle={event.title}
+                        menu={event.menu}
+                        className="text-muted transition-colors hover:text-foreground"
+                      />
                     )}
                   </p>
                   <p className="text-sm text-muted">{formatTime(event.start_time)}</p>
