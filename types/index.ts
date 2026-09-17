@@ -8,6 +8,10 @@ export type EventItem = {
   // not a Supabase Storage URL — see
   // supabase/migrations/20260916190000_add_event_flyer_url.sql.
   flyer_url: string | null;
+  // One course per line, "Course name: item, item, item" — parsed by
+  // components/EventMenuButton.tsx. See
+  // supabase/migrations/20260917234100_day5_anna_prasadam_menu.sql.
+  menu: string | null;
 };
 
 export type Registration = {
