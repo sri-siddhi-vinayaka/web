@@ -41,6 +41,11 @@ export default function AddEventForm() {
         placeholder="Description (optional)"
         className="min-h-11 rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
       />
+      <input
+        name="flyer_url"
+        placeholder="Flyer path (optional, e.g. /flyers/day6.jpeg)"
+        className="min-h-11 rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
+      />
 
       <div aria-live="polite">
         {state.status === "error" && (
