@@ -101,7 +101,14 @@ export type CreateEventState =
 function parseEventForm(
   formData: FormData
 ):
-  | { title: string; dayNumber: number; startTime: Date; description: string; flyerUrl: string | null }
+  | {
+      title: string;
+      dayNumber: number;
+      startTime: Date;
+      description: string;
+      flyerUrl: string | null;
+      menu: string | null;
+    }
   | { error: string } {
   const title = String(formData.get("title") ?? "").trim();
   const dayNumber = Number(formData.get("day_number"));
@@ -112,6 +119,10 @@ function parseEventForm(
   // — a plain pasted path, same UX as Gallery's image_url field, not a file
   // upload (no upload infra exists in this $0-budget app).
   const flyerUrl = String(formData.get("flyer_url") ?? "").trim() || null;
+  // "Course name: item, item, item" per line — see
+  // supabase/migrations/20260917234100_day5_anna_prasadam_menu.sql and
+  // components/EventMenuButton.tsx, which parses this same format.
+  const menu = String(formData.get("menu") ?? "").trim() || null;
 
   if (!title) return { error: "Title is required." };
   if (!Number.isInteger(dayNumber) || dayNumber < 1) {
@@ -124,7 +135,7 @@ function parseEventForm(
     return { error: "That start time couldn't be parsed." };
   }
 
-  return { title, dayNumber, startTime, description, flyerUrl };
+  return { title, dayNumber, startTime, description, flyerUrl, menu };
 }
 
 function revalidateEventPaths(): void {
@@ -155,6 +166,7 @@ export async function createEventAction(
     start_time: parsed.startTime.toISOString(),
     description: parsed.description,
     flyer_url: parsed.flyerUrl,
+    menu: parsed.menu,
   });
 
   if (error) {
@@ -198,6 +210,7 @@ export async function updateEventAction(
       start_time: parsed.startTime.toISOString(),
       description: parsed.description,
       flyer_url: parsed.flyerUrl,
+      menu: parsed.menu,
     })
     .eq("id", id);
 
