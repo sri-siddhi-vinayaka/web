@@ -71,8 +71,16 @@ export default async function CharityPage() {
             <section key={section.year}>
               <h2 className="text-lg font-semibold text-foreground">{section.year}</h2>
 
+              {section.media.length > 0 ? (
+                <CharityMediaGrid items={section.media} />
+              ) : (
+                <p className="mt-4 text-sm text-muted">
+                  Photos and videos from this year are being added here soon.
+                </p>
+              )}
+
               {section.story && (
-                <p className="mt-2 text-sm text-muted">{section.story}</p>
+                <p className="mt-4 text-sm text-muted">{section.story}</p>
               )}
 
               {section.stories.length > 0 ? (
@@ -89,18 +97,10 @@ export default async function CharityPage() {
                 </div>
               ) : (
                 !section.story && (
-                  <p className="mt-2 text-sm text-muted">
+                  <p className="mt-4 text-sm text-muted">
                     This year&apos;s write-up is being put together — check back soon.
                   </p>
                 )
-              )}
-
-              {section.media.length > 0 ? (
-                <CharityMediaGrid items={section.media} />
-              ) : (
-                <p className="mt-4 text-sm text-muted">
-                  Photos and videos from this year are being added here soon.
-                </p>
               )}
             </section>
           ))}
