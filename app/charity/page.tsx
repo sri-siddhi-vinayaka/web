@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import CharityMediaGrid from "@/components/CharityMediaGrid";
-import { getCharityMedia, getCharityYears } from "@/lib/charity";
+import { getCharityMedia, getCharityStories, getCharityYears } from "@/lib/charity";
 
 export const metadata: Metadata = { title: "Charity" };
 
@@ -13,27 +13,38 @@ export const dynamic = "force-dynamic";
 type YearSection = {
   year: number;
   story: string | null;
+  stories: Awaited<ReturnType<typeof getCharityStories>>;
   media: Awaited<ReturnType<typeof getCharityMedia>>;
 };
 
 export default async function CharityPage() {
-  const [years, media] = await Promise.all([getCharityYears(), getCharityMedia()]);
+  const [years, stories, media] = await Promise.all([
+    getCharityYears(),
+    getCharityStories(),
+    getCharityMedia(),
+  ]);
 
   // One section per year, newest first — a year shows up here whether it
-  // has a story, media, or both, so an admin can add either one first
-  // without the other silently hiding it (see the migration's comment on
-  // why charity_media.year isn't a foreign key into charity_years).
+  // has a write-up, stories, media, or any combination, so an admin can add
+  // one before the others without it silently hiding the rest (see the
+  // migration's comment on why charity_media.year isn't a foreign key into
+  // charity_years).
   const mediaByYear = new Map<number, typeof media>();
   for (const item of media) {
     mediaByYear.set(item.year, [...(mediaByYear.get(item.year) ?? []), item]);
   }
+  const storiesByYear = new Map<number, typeof stories>();
+  for (const item of stories) {
+    storiesByYear.set(item.year, [...(storiesByYear.get(item.year) ?? []), item]);
+  }
   const storyByYear = new Map(years.map((y) => [y.year, y.story]));
-  const allYears = [...new Set([...years.map((y) => y.year), ...mediaByYear.keys()])].sort(
-    (a, b) => b - a
-  );
+  const allYears = [
+    ...new Set([...years.map((y) => y.year), ...storiesByYear.keys(), ...mediaByYear.keys()]),
+  ].sort((a, b) => b - a);
   const yearSections: YearSection[] = allYears.map((year) => ({
     year,
     story: storyByYear.get(year) ?? null,
+    stories: storiesByYear.get(year) ?? [],
     media: mediaByYear.get(year) ?? [],
   }));
 
@@ -60,16 +71,36 @@ export default async function CharityPage() {
             <section key={section.year}>
               <h2 className="text-lg font-semibold text-foreground">{section.year}</h2>
 
-              <p className="mt-2 text-sm text-muted">
-                {section.story ?? "This year's write-up is being put together — check back soon."}
-              </p>
-
               {section.media.length > 0 ? (
                 <CharityMediaGrid items={section.media} />
               ) : (
                 <p className="mt-4 text-sm text-muted">
                   Photos and videos from this year are being added here soon.
                 </p>
+              )}
+
+              {section.story && (
+                <p className="mt-4 text-sm text-muted">{section.story}</p>
+              )}
+
+              {section.stories.length > 0 ? (
+                <div className="mt-4 flex flex-col gap-4">
+                  {section.stories.map((story) => (
+                    <article
+                      key={story.id}
+                      className="rounded-2xl bg-surface p-4 shadow-sm ring-1 ring-border"
+                    >
+                      <h3 className="font-semibold text-brand">{story.title}</h3>
+                      <p className="mt-2 whitespace-pre-line text-sm text-muted">{story.body}</p>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                !section.story && (
+                  <p className="mt-4 text-sm text-muted">
+                    This year&apos;s write-up is being put together — check back soon.
+                  </p>
+                )
               )}
             </section>
           ))}

@@ -2,15 +2,17 @@ import type { Metadata } from "next";
 import { isAdminRequest } from "@/lib/adminAuth";
 import { isSupabaseAdminConfigured, supabaseAdmin } from "@/lib/supabaseAdmin";
 import { getAnnouncements, getEvents, getGalleryItems } from "@/lib/events";
-import { getCharityMedia, getCharityYears } from "@/lib/charity";
+import { getCharityMedia, getCharityStories, getCharityYears } from "@/lib/charity";
 import AddCharityMediaForm from "@/components/AddCharityMediaForm";
 import AddEventForm from "@/components/AddEventForm";
 import EditEventForm from "@/components/EditEventForm";
 import {
+  addCharityStoryAction,
   addGalleryItemAction,
   createAnnouncementAction,
   deleteAnnouncementAction,
   deleteCharityMediaAction,
+  deleteCharityStoryAction,
   deleteCharityYearAction,
   deleteEventAction,
   deleteFoodRegistrationAction,
@@ -126,17 +128,27 @@ export default async function AdminPage(props: PageProps<"/admin">) {
     );
   }
 
-  const [events, registrations, foodRegistrations, suggestions, announcements, galleryItems, charityYears, charityMedia] =
-    await Promise.all([
-      getEvents(),
-      getRegistrations(),
-      getFoodRegistrations(),
-      getSuggestions(),
-      getAnnouncements(),
-      getGalleryItems(),
-      getCharityYears(),
-      getCharityMedia(),
-    ]);
+  const [
+    events,
+    registrations,
+    foodRegistrations,
+    suggestions,
+    announcements,
+    galleryItems,
+    charityYears,
+    charityStories,
+    charityMedia,
+  ] = await Promise.all([
+    getEvents(),
+    getRegistrations(),
+    getFoodRegistrations(),
+    getSuggestions(),
+    getAnnouncements(),
+    getGalleryItems(),
+    getCharityYears(),
+    getCharityStories(),
+    getCharityMedia(),
+  ]);
 
   const pendingCount = registrations.filter((registration) => registration.status === "pending").length;
 
@@ -486,6 +498,72 @@ export default async function AdminPage(props: PageProps<"/admin">) {
           {charityYears.length === 0 && (
             <li className="rounded-xl bg-surface p-3 text-center text-sm text-muted ring-1 ring-border">
               No year write-ups yet.
+            </li>
+          )}
+        </ul>
+
+        <h3 className="mt-6 text-sm font-semibold text-foreground">
+          Stories ({charityStories.length})
+        </h3>
+        <p className="mt-1 text-sm text-muted">
+          Individual titled stories under a year — e.g. one family helped,
+          one shelter repaired — shown separately on the Charity page rather
+          than folded into the year write-up above.
+        </p>
+        <form
+          action={addCharityStoryAction}
+          className="mt-2 flex flex-col gap-2 rounded-2xl bg-surface p-4 shadow-sm ring-1 ring-border"
+        >
+          <input
+            name="year"
+            type="number"
+            placeholder="Year"
+            required
+            defaultValue={new Date().getFullYear()}
+            className="min-h-11 w-28 rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
+          />
+          <input
+            name="title"
+            placeholder="Title (e.g. Supporting a Girls' Shelter in Kachiguda)"
+            required
+            className="min-h-11 rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
+          />
+          <textarea
+            name="body"
+            placeholder="What happened, and how did we help?"
+            required
+            rows={4}
+            className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
+          />
+          <button
+            type="submit"
+            className="min-h-11 self-start rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-contrast hover:opacity-90"
+          >
+            Add story
+          </button>
+        </form>
+        <ul className="mt-3 flex flex-col gap-2">
+          {charityStories.map((entry) => (
+            <li
+              key={entry.id}
+              className="rounded-xl bg-surface p-3 text-sm ring-1 ring-border"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <span className="font-semibold text-foreground">
+                  {entry.year} — {entry.title}
+                </span>
+                <form action={deleteCharityStoryAction.bind(null, entry.id)}>
+                  <button type="submit" className="shrink-0 text-xs text-danger underline underline-offset-2">
+                    Delete
+                  </button>
+                </form>
+              </div>
+              <p className="mt-1 text-muted">{entry.body}</p>
+            </li>
+          ))}
+          {charityStories.length === 0 && (
+            <li className="rounded-xl bg-surface p-3 text-center text-sm text-muted ring-1 ring-border">
+              No stories yet.
             </li>
           )}
         </ul>

@@ -19,6 +19,13 @@ export type CharityYear = {
   story: string;
 };
 
+export type CharityStory = {
+  id: string;
+  year: number;
+  title: string;
+  body: string;
+};
+
 export type CharityMediaItem = {
   id: string;
   year: number;
@@ -75,6 +82,30 @@ export async function getCharityYears(): Promise<CharityYear[]> {
     return data ?? [];
   } catch (e) {
     return logAndFallback("getCharityYears", e as { message: string }, []);
+  }
+}
+
+export async function getCharityStories(): Promise<CharityStory[]> {
+  if (!isSupabaseAdminConfigured) return [];
+
+  try {
+    const { data, error } = await withTimeout(
+      supabaseAdmin
+        .from("charity_stories")
+        .select("id, year, title, body")
+        .order("year", { ascending: false })
+        .order("created_at", { ascending: true }) as unknown as Promise<{
+        data: CharityStory[] | null;
+        error: { message: string } | null;
+      }>,
+      800,
+      "getCharityStories"
+    );
+
+    if (error) return logAndFallback("getCharityStories", error, []);
+    return data ?? [];
+  } catch (e) {
+    return logAndFallback("getCharityStories", e as { message: string }, []);
   }
 }
 
