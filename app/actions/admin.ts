@@ -339,6 +339,34 @@ export async function deleteCharityYearAction(year: number): Promise<void> {
   revalidatePath("/charity");
 }
 
+// -- Charity: individual stories --------------------------------------------
+//
+// Separate from the year write-up above — a year can hold several distinct,
+// titled stories (e.g. one family helped, one shelter repaired) rather than
+// one blurb covering everything. No upsert-by-key here: each submission is
+// its own new row, edited by deleting and re-adding.
+
+export async function addCharityStoryAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+
+  const year = Number(formData.get("year"));
+  const title = String(formData.get("title") ?? "").trim();
+  const body = String(formData.get("body") ?? "").trim();
+  if (!Number.isInteger(year) || !title || !body) return;
+
+  await supabaseAdmin.from("charity_stories").insert({ year, title, body });
+
+  revalidatePath("/admin");
+  revalidatePath("/charity");
+}
+
+export async function deleteCharityStoryAction(id: string): Promise<void> {
+  await requireAdmin();
+  await supabaseAdmin.from("charity_stories").delete().eq("id", id);
+  revalidatePath("/admin");
+  revalidatePath("/charity");
+}
+
 // -- Charity: media --------------------------------------------------------
 //
 // Uploads never pass through a Server Action's own request body — that's
